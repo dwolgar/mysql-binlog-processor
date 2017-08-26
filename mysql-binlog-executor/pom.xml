@@ -1,0 +1,46 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.github.mysql</groupId>
+		<artifactId>mysql-binlog-processor</artifactId>
+		<version>0.0.1</version>
+	</parent>
+
+	<groupId>com.github.mysql</groupId>
+	<artifactId>mysql-binlog-executor</artifactId>
+	<name>mysql-binlog-executor</name>
+	<description>Binlog Event Transaction Excecutor</description>
+	<packaging>jar</packaging>
+
+	<developers>
+		<developer>
+			<id>dwolgar</id>
+			<email>dwolgar@yahoo.com</email>
+			<name>Dmitri Izofatov</name>
+		</developer>
+	</developers>
+
+	<properties>
+		<mysql-connector.version>5.1.42</mysql-connector.version>
+	</properties>
+
+	<dependencies>
+		<!-- mysql binlog reader common -->
+		<dependency>
+			<groupId>com.github.mysql</groupId>
+			<artifactId>mysql-binlog-reader-common</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<!-- MYSQL -->
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>${mysql-connector.version}</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+</project>

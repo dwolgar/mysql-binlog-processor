@@ -1,0 +1,111 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.github.mysql</groupId>
+	<artifactId>mysql-binlog-processor</artifactId>
+	<version>0.0.1</version>
+	<packaging>pom</packaging>
+	<name>mysql-binlog-processor</name>
+	<description>Set of mysql binlog handlers (readers and executers)</description>
+
+	<developers>
+		<developer>
+			<id>dwolgar</id>
+			<email>dwolgar@yahoo.com</email>
+			<name>Dmitri Izofatov</name>
+		</developer>
+	</developers>
+
+	<modules>
+		<module>mysql-binlog-reader-common</module>
+		<module>mysql-binlog-reader-netty</module>
+		<module>mysql-binlog-executor</module>
+		<module>mysql-binlog-jdbc-executor</module>
+	</modules>
+
+	<properties>
+		<jdk.version>1.8</jdk.version>
+		<junit.version>4.12</junit.version>
+		<slf4j.version>1.7.5</slf4j.version>
+		<log4j.version>1.2.16</log4j.version>
+		<mysql-binlog-common.version>0.0.1</mysql-binlog-common.version>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>com.github.mysql</groupId>
+			<artifactId>mysql-binlog-common</artifactId>
+			<version>${mysql-binlog-common.version}</version>
+		</dependency>
+		<!-- Unit Tests -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>${junit.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- Logging -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>${slf4j.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>${log4j.version}</version>
+			<scope>provided</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>${jdk.version}</source>
+					<target>${jdk.version}</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-source-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>jar-no-fork</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<configuration>
+					<failsOnError>true</failsOnError>
+					<configLocation>additions/codequality/checkstyle.xml</configLocation>
+					<headerLocation>additions/codequality/license.header.txt</headerLocation>
+					<includeTestSourceDirectory>true</includeTestSourceDirectory>
+					<consoleOutput>true</consoleOutput>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>verify</phase>
+						<goals>
+							<goal>checkstyle</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			
+		</plugins>
+	</build>
+
+</project>
