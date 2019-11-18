@@ -28,11 +28,11 @@ public class SimpleExecutorContextImpl implements ExecutorContext {
     private Map<String, Object> values;
 
     public SimpleExecutorContextImpl() {
-        this.values = new HashMap<String, Object>();
+        this.values = new HashMap<>();
     }
 
     public SimpleExecutorContextImpl(Connection connection, MetadataHolder metadataHolder) {
-        this.values = new HashMap<String, Object>();
+        this.values = new HashMap<>();
         this.connection = connection;
         this.metadataHolder = metadataHolder;
     }

@@ -39,41 +39,39 @@ public class SimpleMysqlBinlogClient {
 
 
     public SimpleMysqlBinlogClient() {
-        this.mysqlBinlogEventListeners = new ArrayList<MysqlBinlogEventListener>();
+        this.mysqlBinlogEventListeners = new ArrayList<>();
+    }
+    
+    private void updateEventPosition() {
+        try {
+            mysqlBinlogReader.setEventPosition(this.eventPositionStorage.getCurrent());
+        } catch (Exception e) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Unable to read initial binlog position.\nError[" + e.getMessage() + "]\n"
+                           + "Going to use current position from Master");
+            }
+        }
     }
     
     public void process() {
-        
         try {
             if (this.mysqlBinlogReader.getEventPosition() == null) {
-                try {
-                    mysqlBinlogReader.setEventPosition(this.eventPositionStorage.getCurrent());
-                } catch (Exception e) {
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Unable to read initial binlog position.\nError[" + e.getMessage() + "]\n"
-                                   + "Going to use current position from Master");
-                    }
-                }
+                updateEventPosition();
             }
-            
             mysqlBinlogReader.open();
-            
             while (true) {
                 BinlogEvent event = mysqlBinlogReader.readBinlogEvent();
-
                 boolean changePosition = true;
                 for (MysqlBinlogEventListener eventListener : this.mysqlBinlogEventListeners) {
                     if (!eventListener.onEvent(event)) {
                         changePosition = false;
                     }
                 }
-
-                
                 if (event instanceof RotateEvent) {
                     final RotateEvent e = (RotateEvent) event;
                     if (changePosition) {
                         EventPosition currentEventPosition = mysqlBinlogReader.getEventPosition(); 
-                        currentEventPosition.setBinlogFileName(e.getBinlogFileName().toString());
+                        currentEventPosition.setBinlogFileName(e.getBinlogFileName());
                         currentEventPosition.setPosition(e.getBinlogPosition());
                         eventPositionStorage.saveCurrent(currentEventPosition);
                     }

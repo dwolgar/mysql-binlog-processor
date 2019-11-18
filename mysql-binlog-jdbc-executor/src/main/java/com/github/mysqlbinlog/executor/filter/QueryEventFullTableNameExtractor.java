@@ -82,7 +82,9 @@ public class QueryEventFullTableNameExtractor implements FullTableNameExtractor<
         }
         
         for (int i = 0; i <= matcher.groupCount(); i++) {
-            logger.debug("GROUP [" + i + "][" + matcher.group(i) + "]");
+            if (logger.isDebugEnabled()) {
+                logger.debug("GROUP [{}][{}]", i, matcher.group(i));
+            }
         }
         String databaseName = matcher.group(1);
         String tableName = matcher.group(2);

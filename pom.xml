@@ -85,26 +85,6 @@
 					</execution>
 				</executions>
 			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-checkstyle-plugin</artifactId>
-				<configuration>
-					<failsOnError>true</failsOnError>
-					<configLocation>additions/codequality/checkstyle.xml</configLocation>
-					<headerLocation>additions/codequality/license.header.txt</headerLocation>
-					<includeTestSourceDirectory>true</includeTestSourceDirectory>
-					<consoleOutput>true</consoleOutput>
-				</configuration>
-				<executions>
-					<execution>
-						<phase>verify</phase>
-						<goals>
-							<goal>checkstyle</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			
 		</plugins>
 	</build>
 

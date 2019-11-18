@@ -17,487 +17,86 @@
 package com.github.mysqlbinlog.client.netty;
 
 import com.github.mysql.io.MysqlBinlogByteArrayInputStream;
-import com.github.mysql.protocol.deserializer.ErrorResponsePacketDeserializer;
-import com.github.mysql.protocol.deserializer.GreetingResponsePacketDeserializer;
-import com.github.mysql.protocol.deserializer.ResultSetFieldResponsePacketDeserializer;
-import com.github.mysql.protocol.deserializer.ResultSetHeaderResponsePacketDeserializer;
-import com.github.mysql.protocol.deserializer.ResultSetRowResponsePacketDeserializer;
 import com.github.mysql.protocol.model.AuthenticateCmdPacket;
-import com.github.mysql.protocol.model.BinlogDumpCmdPacket;
 import com.github.mysql.protocol.model.ErrorResponsePacket;
 import com.github.mysql.protocol.model.GreetingResponsePacket;
-import com.github.mysql.protocol.model.QueryCmdPacket;
 import com.github.mysql.protocol.model.RawMysqlPacket;
-import com.github.mysql.protocol.model.ResultSetFieldResponsePacket;
-import com.github.mysql.protocol.model.ResultSetHeaderResponsePacket;
-import com.github.mysql.protocol.model.ResultSetRowResponsePacket;
-import com.github.mysqlbinlog.event.checksum.MysqlChecksumFactory;
-import com.github.mysqlbinlog.event.deserializer.BinlogDeserializerContext;
-import com.github.mysqlbinlog.event.deserializer.BinlogEventDeserializerFactory;
-import com.github.mysqlbinlog.event.deserializer.BinlogEventFactory;
-import com.github.mysqlbinlog.event.deserializer.BinlogEventHeaderDeserializer;
-import com.github.mysqlbinlog.event.deserializer.SimpleBinlogDeserializerContextImpl;
-import com.github.mysqlbinlog.event.deserializer.SimpleBinlogEventDeserializerFactoryImpl;
-import com.github.mysqlbinlog.event.deserializer.SimpleBinlogEventFactoryImpl;
-import com.github.mysqlbinlog.event.deserializer.SimpleBinlogEventHeaderDeserializerImpl;
-import com.github.mysqlbinlog.event.deserializer.SimpleSingleBinglogEventDeserializerImpl;
-import com.github.mysqlbinlog.event.deserializer.SingleBinglogEventDeserializer;
-import com.github.mysqlbinlog.model.event.BinlogEvent;
-import com.github.mysqlbinlog.model.event.extra.ColumnExtraData;
-import com.github.mysqlbinlogreader.common.MysqlBinlogReader;
-import com.github.mysqlbinlogreader.common.eventposition.EventPosition;
-import com.github.mysqlbinlogreader.common.exception.RuntimeMysqlErrorException;
+import com.github.mysqlbinlogreader.common.AbstractMysqlBinlogReaderImpl;
+import com.github.mysqlbinlogreader.common.Connection;
+import com.github.mysqlbinlogreader.common.exception.RuntimeMysqlBinlogClientException;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.ByteArrayInputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-public class MysqlBinlogReaderNettyImpl implements MysqlBinlogReader {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MysqlBinlogReaderNettyImpl.class);
-
+public class MysqlBinlogReaderNettyImpl extends AbstractMysqlBinlogReaderImpl {
     private EventLoopGroup workerGroup;
-    private Connection connection;
-
-    private GreetingResponsePacketDeserializer greetingResponsePacketDeserializer;
-    private ErrorResponsePacketDeserializer errorResponsePacketDeserializer;
-
-    private ResultSetHeaderResponsePacketDeserializer resultSetHeaderResponsePacketDeserializer;
-    private ResultSetFieldResponsePacketDeserializer resultSetFieldResponsePacketDeserializer;
-    private ResultSetRowResponsePacketDeserializer resultSetRowResponsePacketDeserializer;
-
-    private SingleBinglogEventDeserializer singleBinglogEventDeserializer;
-
-    private SimpleBinlogDeserializerContextImpl binlogDeserializerContext;
-
-
-    private Map<String, String> variables;
 
     private String masterHostname;
     private int masterPort;
     private String username;
     private String password;
-    private int serverId;
 
     private int readTimeout;
 
-
-    private EventPosition eventPosition;
-
-    public MysqlBinlogReaderNettyImpl() {
-        this.variables = new HashMap<String, String>();
-        this.binlogDeserializerContext = new SimpleBinlogDeserializerContextImpl();
-    }
-
-    private void initialize() {
-        if (this.singleBinglogEventDeserializer == null) {
-            BinlogEventHeaderDeserializer binlogEventHeaderParser = new SimpleBinlogEventHeaderDeserializerImpl();
-            BinlogEventFactory binlogEventFactory = new SimpleBinlogEventFactoryImpl();
-            BinlogEventDeserializerFactory binlogEventDeserializerFactory = new SimpleBinlogEventDeserializerFactoryImpl();
-
-            SimpleSingleBinglogEventDeserializerImpl singleBinglogEventDeserializer = new SimpleSingleBinglogEventDeserializerImpl();
-            singleBinglogEventDeserializer.setBinlogEventHeaderParser(binlogEventHeaderParser);
-            singleBinglogEventDeserializer.setBinlogEventFactory(binlogEventFactory);
-            singleBinglogEventDeserializer.setBinlogEventUnmarshallerFactory(binlogEventDeserializerFactory);
-
-            setSingleBinglogEventDeserializer(singleBinglogEventDeserializer);
-        }
-
-        if (this.greetingResponsePacketDeserializer == null) {
-            setGreetingResponsePacketDeserializer(new GreetingResponsePacketDeserializer());
-        }
-
-        if (this.errorResponsePacketDeserializer == null) {
-            setErrorResponsePacketDeserializer(new ErrorResponsePacketDeserializer());
-        }
-
-        if (this.resultSetHeaderResponsePacketDeserializer == null) {
-            setResultSetHeaderResponsePacketDeserializer(new ResultSetHeaderResponsePacketDeserializer());
-        }
-
-        if (this.resultSetFieldResponsePacketDeserializer == null) {
-            setResultSetFieldResponsePacketDeserializer(new ResultSetFieldResponsePacketDeserializer());
-        }
-
-        if (this.resultSetRowResponsePacketDeserializer == null) {
-            setResultSetRowResponsePacketDeserializer(new ResultSetRowResponsePacketDeserializer());
-        }
-
-        if (this.connection == null) {
-            this.workerGroup = new NioEventLoopGroup();
-
-            NettyConnectionImpl connection = new NettyConnectionImpl(workerGroup);
-            connection.setReadTimeout(readTimeout);
-            this.setConnection(connection);
-        }
-
-    }
-
-    /* (non-Javadoc)
-     * @see com.github.mysqlbinlog.communication.netty.MysqlBinlogClient#connect()
-     */
     @Override
-    public void open() {
+    protected Connection initializeConnection() {
+        this.workerGroup = new NioEventLoopGroup();
 
-        initialize();
-
-        connection.connect(masterHostname, masterPort);
-
-        authenticate();
-
-        receiveSettings();
-
-        bindSettings();
-
-        readMetaData();
-
-        if (this.eventPosition == null) {
-            readCurrentBinlogPosition();
-        }
-
-        dumpBinglog();
+        NettyConnectionImpl connection = new NettyConnectionImpl(workerGroup);
+        connection.setReadTimeout(readTimeout);
+        connection.setHostName(masterHostname);
+        connection.setPort(masterPort);
+        
+        return connection;
     }
-
-
-
+    
+    @Override
+    public void connect() {
+        super.connect();
+        authenticate();
+    }
+    
 
     /* (non-Javadoc)
      * @see com.github.mysqlbinlog.communication.netty.MysqlBinlogClient#authenticate()
      */
     public void authenticate() {
 
-        RawMysqlPacket packet = connection.readRawPacket();
+        RawMysqlPacket packet = getConnection().readRawPacket();
         GreetingResponsePacket greetingResponsePacket = 
-                (GreetingResponsePacket) greetingResponsePacketDeserializer.deserialize(
+                (GreetingResponsePacket) getGreetingResponsePacketDeserializer().deserialize(
                         new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
 
         AuthenticateCmdPacket authenticateCmdPacket = 
                 new AuthenticateCmdPacket(null, this.username, this.password, "utf-8", 
                         greetingResponsePacket.getScramble(), 0, greetingResponsePacket.getServerCollation());
-        connection.writeRawPacket(authenticateCmdPacket);
+        getConnection().writeRawPacket(authenticateCmdPacket);
 
-        packet = connection.readRawPacket();
+        packet = getConnection().readRawPacket();
 
         if (packet.isErrorPacket()) {
             ErrorResponsePacket errorResponsePacket = 
-                    (ErrorResponsePacket) errorResponsePacketDeserializer.deserialize(
+                    (ErrorResponsePacket) getErrorResponsePacketDeserializer().deserialize(
                             new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
             onMysqlError(errorResponsePacket);
         }
 
         if (!packet.isOKPacket()) {
-            throw new RuntimeException("Authentication ERROR [ Unknown ]");
+            throw new RuntimeMysqlBinlogClientException("Authentication ERROR [ Unknown ]");
         }
-    }
-
-    /* (non-Javadoc)
-     * @see com.github.mysqlbinlog.communication.netty.MysqlBinlogClient#receiveSettings()
-     */
-    @SuppressWarnings("unused")
-    public void receiveSettings() {
-        QueryCmdPacket cmd = new QueryCmdPacket("SHOW GLOBAL VARIABLES");
-        connection.writeRawPacket(cmd);
-
-        RawMysqlPacket packet = connection.readRawPacket();
-
-        if (packet.isErrorPacket()) {
-            ErrorResponsePacket errorResponsePacket = 
-                    (ErrorResponsePacket) errorResponsePacketDeserializer.deserialize(
-                            new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
-            onMysqlError(errorResponsePacket);
-        }
-
-        if (packet.isEOFPacket()) {
-            throw new RuntimeException("receiveSettings ERROR [ Unknown ]");
-        }
-
-        ResultSetHeaderResponsePacket resultSetHeaderResponsePacket = 
-                (ResultSetHeaderResponsePacket)resultSetHeaderResponsePacketDeserializer.deserialize(
-                        new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody()))); 
-
-        packet = connection.readRawPacket();
-        while (!packet.isEOFPacket()) {
-            if (packet.isErrorPacket()) {
-                ErrorResponsePacket errorResponsePacket = 
-                        (ErrorResponsePacket) errorResponsePacketDeserializer.deserialize(
-                                new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
-                onMysqlError(errorResponsePacket);
-            }
-
-            ResultSetFieldResponsePacket resultSetFieldResponsePacket = 
-                    (ResultSetFieldResponsePacket)resultSetFieldResponsePacketDeserializer.deserialize(
-                            new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
-            packet = connection.readRawPacket();
-        }
-
-        packet = connection.readRawPacket();
-        while (!packet.isEOFPacket()) {
-            if (packet.isErrorPacket()) {
-                ErrorResponsePacket errorResponsePacket = 
-                        (ErrorResponsePacket) errorResponsePacketDeserializer.deserialize(
-                                new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
-                onMysqlError(errorResponsePacket);
-            }
-
-            ResultSetRowResponsePacket resultSetRowResponsePacket = 
-                    (ResultSetRowResponsePacket)resultSetRowResponsePacketDeserializer.deserialize(
-                            new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
-            packet = connection.readRawPacket();
-
-            variables.put(resultSetRowResponsePacket.getValues().get(0), resultSetRowResponsePacket.getValues().get(1));
-        }
-    }
-
-    private void bindSettings() {
-        String checksumType = this.variables.get("binlog_checksum");
-        binlogDeserializerContext.setChecksum(MysqlChecksumFactory.create(checksumType));
-
-        if (checksumType != null && checksumType.length() > 0 && !checksumType.equalsIgnoreCase("NONE")) {
-            QueryCmdPacket cmd = new QueryCmdPacket("SET @master_binlog_checksum= '@@global.binlog_checksum'");
-            connection.writeRawPacket(cmd);
-
-            RawMysqlPacket packet = connection.readRawPacket();
-
-            LOGGER.debug("Channel Read packet [" + packet + "]");
-
-            if (packet.isErrorPacket()) {
-                ErrorResponsePacket errorResponsePacket = 
-                        (ErrorResponsePacket) errorResponsePacketDeserializer.deserialize(
-                                new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
-                onMysqlError(errorResponsePacket);
-            }
-
-            if (packet.isEOFPacket()) {
-                throw new RuntimeException("receiveSettings ERROR [ Unknown ]");
-            }
-        }
-    }
-
-    private void readMetaData() {
-        QueryCmdPacket cmd = new QueryCmdPacket(
-                "SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, COLUMN_TYPE " 
-                        + "FROM information_schema.COLUMNS " 
-                        + "ORDER BY TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION");
-        connection.writeRawPacket(cmd);
-
-        RawMysqlPacket packet = connection.readRawPacket();
-
-        if (packet.isErrorPacket()) {
-            ErrorResponsePacket errorResponsePacket = 
-                    (ErrorResponsePacket) errorResponsePacketDeserializer.deserialize(
-                            new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
-            onMysqlError(errorResponsePacket);
-        }
-
-        if (packet.isEOFPacket()) {
-            throw new RuntimeException("readMetaData ERROR [ Unknown ]");
-        }
-
-        ResultSetHeaderResponsePacket resultSetHeaderResponsePacket = 
-                (ResultSetHeaderResponsePacket)resultSetHeaderResponsePacketDeserializer.deserialize(
-                        new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody()))); 
-
-        packet = connection.readRawPacket();
-        while (!packet.isEOFPacket()) {
-            if (packet.isErrorPacket()) {
-                ErrorResponsePacket errorResponsePacket = 
-                        (ErrorResponsePacket) errorResponsePacketDeserializer.deserialize(
-                                new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
-                onMysqlError(errorResponsePacket);
-            }
-
-            ResultSetFieldResponsePacket resultSetFieldResponsePacket = 
-                    (ResultSetFieldResponsePacket)resultSetFieldResponsePacketDeserializer.deserialize(
-                            new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
-
-            packet = connection.readRawPacket();
-        }
-
-        packet = connection.readRawPacket();
-        while (!packet.isEOFPacket()) {
-            if (packet.isErrorPacket()) {
-                ErrorResponsePacket errorResponsePacket = 
-                        (ErrorResponsePacket) errorResponsePacketDeserializer.deserialize(
-                                new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
-                onMysqlError(errorResponsePacket);
-            }
-
-            ResultSetRowResponsePacket resultSetRowResponsePacket = 
-                    (ResultSetRowResponsePacket)resultSetRowResponsePacketDeserializer.deserialize(
-                            new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
-            packet = connection.readRawPacket();
-
-
-            String databaseName = resultSetRowResponsePacket.getValues().get(0);
-            String tableName = resultSetRowResponsePacket.getValues().get(1);
-            String columnName = resultSetRowResponsePacket.getValues().get(2);
-            String columnType = resultSetRowResponsePacket.getValues().get(3);
-
-            List<ColumnExtraData> columnsExtraItems = binlogDeserializerContext.getColumnExtra(databaseName, tableName);
-            if (columnsExtraItems == null) {
-                columnsExtraItems = new ArrayList<ColumnExtraData>();
-                binlogDeserializerContext.addColumnExtra(databaseName, tableName, columnsExtraItems);
-            }
-
-            columnsExtraItems.add(new ColumnExtraData(columnName, columnType));
-        }
-
-    }
-
-    @SuppressWarnings("unused")
-    public void readCurrentBinlogPosition() {
-        QueryCmdPacket cmd = new QueryCmdPacket("SHOW MASTER STATUS");
-        connection.writeRawPacket(cmd);
-
-        RawMysqlPacket packet = connection.readRawPacket();
-
-        LOGGER.debug("Channel Read packet [" + packet + "]");
-
-        if (packet.isErrorPacket()) {
-            ErrorResponsePacket errorResponsePacket = 
-                    (ErrorResponsePacket) errorResponsePacketDeserializer.deserialize(
-                            new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
-            onMysqlError(errorResponsePacket);
-        }
-
-        if (packet.isEOFPacket()) {
-            throw new RuntimeException("receiveSettings ERROR [ Unknown ]");
-        }
-
-        ResultSetHeaderResponsePacket resultSetHeaderResponsePacket = 
-                (ResultSetHeaderResponsePacket)resultSetHeaderResponsePacketDeserializer.deserialize(
-                        new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody()))); 
-
-        packet = connection.readRawPacket();
-        while (!packet.isEOFPacket()) {
-            if (packet.isErrorPacket()) {
-                ErrorResponsePacket errorResponsePacket = 
-                        (ErrorResponsePacket) errorResponsePacketDeserializer.deserialize(
-                                new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
-                onMysqlError(errorResponsePacket);
-            }
-
-            ResultSetFieldResponsePacket resultSetFieldResponsePacket = 
-                    (ResultSetFieldResponsePacket)resultSetFieldResponsePacketDeserializer.deserialize(
-                            new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
-            packet = connection.readRawPacket();
-        }
-
-        packet = connection.readRawPacket();
-        while (!packet.isEOFPacket()) {
-            if (packet.isErrorPacket()) {
-                ErrorResponsePacket errorResponsePacket = 
-                        (ErrorResponsePacket) errorResponsePacketDeserializer.deserialize(
-                                new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
-                onMysqlError(errorResponsePacket);
-            }
-
-            ResultSetRowResponsePacket resultSetRowResponsePacket = 
-                    (ResultSetRowResponsePacket)resultSetRowResponsePacketDeserializer.deserialize(
-                            new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
-            packet = connection.readRawPacket();
-
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Channel Read ResultSetRowResponsePacket [" + resultSetRowResponsePacket + "]");
-            }
-
-            if (this.eventPosition == null) {
-                this.eventPosition = new EventPosition(resultSetRowResponsePacket.getValues().get(0), 
-                        Long.parseLong(resultSetRowResponsePacket.getValues().get(1)));
-            }
-        }
-
-    }
-
-
-
-    public void dumpBinglog() {
-        BinlogDumpCmdPacket cmd = new BinlogDumpCmdPacket(this.serverId, 0x00, 
-                this.eventPosition.getPosition(), this.eventPosition.getBinlogFileName());
-        connection.writeRawPacket(cmd);
-
-        RawMysqlPacket packet = connection.readRawPacket();
-
-        LOGGER.debug("dumpBinglog response [" + packet + "]");
-
-
-        if (packet.isErrorPacket()) {
-            ErrorResponsePacket errorResponsePacket = 
-                    (ErrorResponsePacket) errorResponsePacketDeserializer.deserialize(
-                            new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
-            onMysqlError(errorResponsePacket);
-        }
-
-        if (packet.isEOFPacket()) {
-            throw new RuntimeException("receiveSettings ERROR [ Unknown ]");
-        }
-    }
-
-
-    @Override
-    public BinlogEvent readBinlogEvent() {
-
-        RawMysqlPacket packet = connection.readRawPacket();
-
-        if (packet.isErrorPacket()) {
-            ErrorResponsePacket errorResponsePacket = 
-                    (ErrorResponsePacket) errorResponsePacketDeserializer.deserialize(
-                            new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
-            throw new RuntimeMysqlErrorException(errorResponsePacket);
-        }
-
-        if (packet.isEOFPacket()) {
-            throw new RuntimeException("EOF packet");
-        }
-
-        if (!packet.isOKPacket()) {
-            throw new RuntimeException("Invalid binlog event [" + packet + "]");
-        }
-
-
-        BinlogEvent binlogEvent = (BinlogEvent) singleBinglogEventDeserializer.deserialize(packet.getRawBody(), this.binlogDeserializerContext);
-
-        return binlogEvent;
-    }
-
-    private void onMysqlError(ErrorResponsePacket errorResponsePacket) {
-        throw new RuntimeMysqlErrorException(errorResponsePacket);
     }
 
 
 
     @Override
     public void close() {
-        connection.close();
+        super.close();
         if (this.workerGroup != null) {
             workerGroup.shutdownGracefully();
         }
     }
-
-    @Override
-    public EventPosition getEventPosition() {
-        return eventPosition;
-    }
-
-    @Override
-    public void setEventPosition(EventPosition eventPosition) {
-        this.eventPosition = eventPosition;
-    }
-
-    @Override
-    public BinlogDeserializerContext getBinlogDeserializerContext() {
-        return this.binlogDeserializerContext;
-    }
-
-
-
 
     public String getMasterHostname() {
         return masterHostname;
@@ -531,83 +130,11 @@ public class MysqlBinlogReaderNettyImpl implements MysqlBinlogReader {
         this.password = password;
     }
 
-    public int getServerId() {
-        return serverId;
-    }
-
-    public void setServerId(int serverId) {
-        this.serverId = serverId;
-    }
-
     public int getReadTimeout() {
         return readTimeout;
     }
 
     public void setReadTimeout(int readTimeout) {
         this.readTimeout = readTimeout;
-    }
-
-
-
-    public Connection getConnection() {
-        return connection;
-    }
-
-    public void setConnection(Connection connection) {
-        this.connection = connection;
-    }
-
-    public GreetingResponsePacketDeserializer getGreetingResponsePacketDeserializer() {
-        return greetingResponsePacketDeserializer;
-    }
-
-    public void setGreetingResponsePacketDeserializer(
-            GreetingResponsePacketDeserializer greetingResponsePacketDeserializer) {
-        this.greetingResponsePacketDeserializer = greetingResponsePacketDeserializer;
-    }
-
-    public ErrorResponsePacketDeserializer getErrorResponsePacketDeserializer() {
-        return errorResponsePacketDeserializer;
-    }
-
-    public void setErrorResponsePacketDeserializer(
-            ErrorResponsePacketDeserializer errorResponsePacketDeserializer) {
-        this.errorResponsePacketDeserializer = errorResponsePacketDeserializer;
-    }
-
-    public ResultSetHeaderResponsePacketDeserializer getResultSetHeaderResponsePacketDeserializer() {
-        return resultSetHeaderResponsePacketDeserializer;
-    }
-
-    public void setResultSetHeaderResponsePacketDeserializer(
-            ResultSetHeaderResponsePacketDeserializer resultSetHeaderResponsePacketDeserializer) {
-        this.resultSetHeaderResponsePacketDeserializer = resultSetHeaderResponsePacketDeserializer;
-    }
-
-    public ResultSetFieldResponsePacketDeserializer getResultSetFieldResponsePacketDeserializer() {
-        return resultSetFieldResponsePacketDeserializer;
-    }
-
-    public void setResultSetFieldResponsePacketDeserializer(
-            ResultSetFieldResponsePacketDeserializer resultSetFieldResponsePacketDeserializer) {
-        this.resultSetFieldResponsePacketDeserializer = resultSetFieldResponsePacketDeserializer;
-    }
-
-    public ResultSetRowResponsePacketDeserializer getResultSetRowResponsePacketDeserializer() {
-        return resultSetRowResponsePacketDeserializer;
-    }
-
-    public void setResultSetRowResponsePacketDeserializer(
-            ResultSetRowResponsePacketDeserializer resultSetRowResponsePacketDeserializer) {
-        this.resultSetRowResponsePacketDeserializer = resultSetRowResponsePacketDeserializer;
-    }
-
-    public SingleBinglogEventDeserializer getSingleBinglogEventDeserializer() {
-        return singleBinglogEventDeserializer;
-    }
-
-    public void setSingleBinglogEventDeserializer(
-            SingleBinglogEventDeserializer singleBinglogEventDeserializer) {
-        this.singleBinglogEventDeserializer = singleBinglogEventDeserializer;
     }
 }

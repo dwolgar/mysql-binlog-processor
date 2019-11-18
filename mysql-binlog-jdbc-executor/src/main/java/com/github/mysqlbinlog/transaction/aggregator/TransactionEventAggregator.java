@@ -16,9 +16,9 @@
 
 package com.github.mysqlbinlog.transaction.aggregator;
 
+
 import com.github.mysqlbinlog.model.event.BinlogEvent;
 import com.github.mysqlbinlog.transaction.TransactionHandler;
-import com.github.mysqlbinlogreader.common.MysqlBinlogEventListener;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +42,7 @@ public class TransactionEventAggregator implements AggregatorContext {
     @Override
     public void addEvent(BinlogEvent event) {
         if (this.transactionEvents == null) {
-            this.transactionEvents = new ArrayList<BinlogEvent>();
+            this.transactionEvents = new ArrayList<>();
         }
         this.transactionEvents.add(event);
     }
@@ -54,7 +54,7 @@ public class TransactionEventAggregator implements AggregatorContext {
         }
 
         for (TransactionHandler transactionHandler : this.transactionHandlers) {
-            if (this.transactionEvents != null && this.transactionEvents.size() > 0) {
+            if (this.transactionEvents != null && !this.transactionEvents.isEmpty()) {
                 if (!transactionHandler.handle(this.transactionEvents)) {
                     break;
                 }

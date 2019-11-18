@@ -8,7 +8,6 @@
 		<version>0.0.1</version>
 	</parent>
 
-	<groupId>com.github.mysql</groupId>
 	<artifactId>mysql-binlog-reader-netty</artifactId>
 	<name>mysql-binlog-reader-netty</name>
 	<description>Mysql Binlog Event Netty Reader Implementation</description>
@@ -23,7 +22,7 @@
 	</developers>
 
 	<properties>
-		<netty.version>4.0.36.Final</netty.version>
+		<netty.version>4.1.43.Final</netty.version>
 	</properties>
 
 	<dependencies>

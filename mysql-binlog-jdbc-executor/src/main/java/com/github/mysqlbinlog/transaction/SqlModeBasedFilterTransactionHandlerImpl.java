@@ -54,15 +54,15 @@ public class SqlModeBasedFilterTransactionHandlerImpl implements TransactionHand
      */
     @Override
     public boolean handle(List<BinlogEvent> events) {
-        if (events == null || events.size() <= 0) {
+        if (events == null || events.isEmpty()) {
             return false;
         }
         
         BinlogEvent first = events.get(0);
-        if (first.getHeader().getEventType() == MysqlConstants.QUERY_EVENT && "BEGIN".equalsIgnoreCase(((QueryEvent)first).getSql())) {
-            if (!this.isQueryAllowed((QueryEvent) first)) {
-                return false;
-            }
+        if (first.getHeader().getEventType() == MysqlConstants.QUERY_EVENT && 
+                "BEGIN".equalsIgnoreCase(((QueryEvent)first).getSql()) &&
+                !this.isQueryAllowed((QueryEvent) first)) {
+            return false;
         }
         
         Iterator<BinlogEvent> it = events.iterator();
@@ -71,7 +71,7 @@ public class SqlModeBasedFilterTransactionHandlerImpl implements TransactionHand
             if (event.getHeader().getEventType() == MysqlConstants.QUERY_EVENT && !this.isQueryAllowed((QueryEvent) event)) {
                 it.remove();
                 if (logger.isDebugEnabled()) {
-                    logger.debug("QUERY [" + event + "] SKIPPED");
+                    logger.debug("QUERY [{}] SKIPPED", event);
                 }
             }
         }

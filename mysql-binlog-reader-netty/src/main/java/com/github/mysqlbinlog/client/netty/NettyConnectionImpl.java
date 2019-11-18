@@ -16,7 +16,11 @@
 
 package com.github.mysqlbinlog.client.netty;
 
+import com.github.mysql.protocol.model.CmdPacket;
 import com.github.mysql.protocol.model.RawMysqlPacket;
+import com.github.mysqlbinlogreader.common.Connection;
+import com.github.mysqlbinlogreader.common.exception.RuntimeMysqlBinlogClientException;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -36,12 +40,15 @@ public class NettyConnectionImpl extends ChannelInboundHandlerAdapter implements
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyConnectionImpl.class);
     private static int DEFAULT_READTIMEOUT = 300;
 
+    private String hostName;
+    private int port;
+    
     private EventLoopGroup eventLoopGroup;
     private ChannelPipeline pipeline;
     private int readTimeout;
     private Throwable lastCause;
 
-    private LinkedBlockingQueue<RawMysqlPacket> queuePackets = new LinkedBlockingQueue<RawMysqlPacket>();
+    private LinkedBlockingQueue<RawMysqlPacket> queuePackets = new LinkedBlockingQueue<>();
 
     public NettyConnectionImpl() {
         this.setReadTimeout(DEFAULT_READTIMEOUT);
@@ -54,7 +61,7 @@ public class NettyConnectionImpl extends ChannelInboundHandlerAdapter implements
 
 
     @Override
-    public void connect(String hostname, int port) {
+    public void connect() {
         Bootstrap bootstrap = new Bootstrap();
 
         bootstrap.group(this.eventLoopGroup)
@@ -67,7 +74,7 @@ public class NettyConnectionImpl extends ChannelInboundHandlerAdapter implements
         bootstrap.option(ChannelOption.AUTO_READ, false);
         bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000);
 
-        ChannelFuture future = bootstrap.connect(hostname, port);
+        ChannelFuture future = bootstrap.connect(this.hostName, this.port);
 
         try {
             future.sync();
@@ -75,8 +82,7 @@ public class NettyConnectionImpl extends ChannelInboundHandlerAdapter implements
             future.channel().config().setAutoRead(false);
             this.pipeline = future.channel().pipeline();
         } catch (Exception ex) {
-            LOGGER.error("Connection Error [" + ex.getMessage() + "]", ex);
-            throw new RuntimeException(ex);
+            throw new RuntimeMysqlBinlogClientException(ex);
         }
 
     }
@@ -84,11 +90,11 @@ public class NettyConnectionImpl extends ChannelInboundHandlerAdapter implements
 
     @Override
     public RawMysqlPacket readRawPacket() {
-        if (queuePackets.size() > 0) {
+        if (queuePackets.isEmpty()) {
             RawMysqlPacket packet = queuePackets.poll();
             
             if (packet.isEmpty()) {
-                throw new RuntimeException((this.lastCause == null ? null : this.lastCause));
+                throw new RuntimeMysqlBinlogClientException((this.lastCause == null ? null : this.lastCause));
             }
             
             return packet;
@@ -104,17 +110,17 @@ public class NettyConnectionImpl extends ChannelInboundHandlerAdapter implements
             }
             
             if (packet.isEmpty()) {
-                throw new RuntimeException((this.lastCause == null ? null : this.lastCause));
+                throw new RuntimeMysqlBinlogClientException((this.lastCause == null ? null : this.lastCause));
             }
             
             return packet;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeMysqlBinlogClientException(e);
         }
     }
 
     @Override
-    public void writeRawPacket(Object msg) {
+    public void writeRawPacket(CmdPacket msg) {
         pipeline.writeAndFlush(msg);
     }
 
@@ -163,5 +169,21 @@ public class NettyConnectionImpl extends ChannelInboundHandlerAdapter implements
     
     public void setReadTimeout(int readTimeout) {
         this.readTimeout = readTimeout;
+    }
+
+    public String getHostName() {
+        return hostName;
+    }
+
+    public void setHostName(String hostName) {
+        this.hostName = hostName;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
     }
 }
