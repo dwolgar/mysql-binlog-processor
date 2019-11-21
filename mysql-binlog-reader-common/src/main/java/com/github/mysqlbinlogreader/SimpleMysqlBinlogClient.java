@@ -23,6 +23,7 @@ import com.github.mysqlbinlogreader.common.MysqlBinlogEventListener;
 import com.github.mysqlbinlogreader.common.MysqlBinlogReader;
 import com.github.mysqlbinlogreader.common.eventposition.EventPosition;
 import com.github.mysqlbinlogreader.common.eventposition.EventPositionStorage;
+import com.github.mysqlbinlogreader.common.exception.RuntimeMysqlBinlogClientException;
 import com.github.mysqlbinlogreader.common.exception.RuntimeMysqlErrorException;
 
 import org.slf4j.Logger;
@@ -63,6 +64,11 @@ public class SimpleMysqlBinlogClient {
             mysqlBinlogReader.open();
             while (true) {
                 BinlogEvent event = mysqlBinlogReader.readBinlogEvent();
+                
+                if (event == null) {
+                    throw new RuntimeMysqlBinlogClientException("Null Event");
+                }
+                
                 boolean changePosition = true;
                 for (MysqlBinlogEventListener eventListener : this.mysqlBinlogEventListeners) {
                     if (!eventListener.onEvent(event)) {

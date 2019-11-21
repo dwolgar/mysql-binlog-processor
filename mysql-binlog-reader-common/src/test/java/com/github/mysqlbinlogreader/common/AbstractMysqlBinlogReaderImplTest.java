@@ -20,7 +20,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import javax.xml.bind.DatatypeConverter;
 
@@ -37,18 +36,6 @@ import com.github.mysqlbinlog.model.event.BinlogEvent;
 import com.github.mysqlbinlog.model.event.FormatDescriptionEvent;
 import com.github.mysqlbinlogreader.common.eventposition.EventPosition;
 
-class ConcreteMysqlBinlogReader extends AbstractMysqlBinlogReaderImpl {
-
-    /* (non-Javadoc)
-     * @see com.github.mysqlbinlogreader.common.AbstractMysqlBinlogReaderImpl#initializeConnection()
-     */
-    @Override
-    protected Connection initializeConnection() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-    
-}
 
 @RunWith(JUnit4.class)
 public class AbstractMysqlBinlogReaderImplTest {
