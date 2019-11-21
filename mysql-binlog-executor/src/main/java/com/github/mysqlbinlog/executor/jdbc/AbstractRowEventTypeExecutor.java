@@ -27,11 +27,11 @@ import java.sql.PreparedStatement;
 
 public abstract class AbstractRowEventTypeExecutor<T extends BinlogEvent> implements EventTypeExecutor<T> {
     private static final Logger logger = LoggerFactory.getLogger(AbstractRowEventTypeExecutor.class);
-    
+
     private static final String PREPARED_STATEMENT_NAME = "preparedStatement";
 
     protected abstract String buildEventSql(ExecutorContext context, T event);
-    
+
     protected abstract void prepareBatch(ExecutorContext context, T event);
 
     protected PreparedStatement prepareStatement(Connection connection, String sql) {
@@ -42,28 +42,28 @@ public abstract class AbstractRowEventTypeExecutor<T extends BinlogEvent> implem
             throw new RuntimeException(e);
         }
     }
-    
+
     protected void setParameter(ExecutorContext context, int index, Object value) {
         try {
             PreparedStatement preparedStatement = (PreparedStatement) context.getValue(PREPARED_STATEMENT_NAME);
-                    
+
             preparedStatement.setObject(index, value);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
         } 
     }
-    
+
     protected void addBatch(ExecutorContext context) {
         try {
             PreparedStatement preparedStatement = (PreparedStatement) context.getValue(PREPARED_STATEMENT_NAME);
-            
+
             preparedStatement.addBatch();
         } catch (Exception e) {
             throw new RuntimeException(e);
         } 
     }
-    
+
 
     protected int[] executeBatch(PreparedStatement preparedStatement) {
         try {
@@ -72,17 +72,15 @@ public abstract class AbstractRowEventTypeExecutor<T extends BinlogEvent> implem
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
-            if (preparedStatement != null) {
-                try {
-                    preparedStatement.close();
-                } catch (Exception e) {
-                    ;
-                }
+            try {
+                preparedStatement.close();
+            } catch (Exception e) {
+                ;
             }
         }
     }
-    
-    
+
+
     protected void closeStatement(PreparedStatement preparedStatement) {
         if (preparedStatement != null) {
             try {
@@ -99,21 +97,21 @@ public abstract class AbstractRowEventTypeExecutor<T extends BinlogEvent> implem
     @Override
     public void execute(ExecutorContext context, T event) {
         String sql = this.buildEventSql(context, event);
-        
+
         if (logger.isDebugEnabled()) {
-            logger.debug("SQL [" + sql + "]");
+            logger.debug("SQL [{}]", sql);
         }
 
         PreparedStatement preparedStatement = this.prepareStatement(context.getConnection(), sql);
-        
+
         context.setValue(PREPARED_STATEMENT_NAME, preparedStatement);
-        
+
         this.prepareBatch(context, event);
-        
+
         this.executeBatch(preparedStatement);
-        
+
         context.resetValues();
-        
+
     }
 
 }

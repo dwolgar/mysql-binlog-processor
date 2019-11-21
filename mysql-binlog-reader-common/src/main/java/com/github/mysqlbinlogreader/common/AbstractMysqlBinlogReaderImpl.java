@@ -99,27 +99,27 @@ public abstract class AbstractMysqlBinlogReaderImpl implements MysqlBinlogReader
             simpleSingleBinglogEventDeserializer.setBinlogEventFactory(binlogEventFactory);
             simpleSingleBinglogEventDeserializer.setBinlogEventUnmarshallerFactory(binlogEventDeserializerFactory);
 
-            setSingleBinglogEventDeserializer(simpleSingleBinglogEventDeserializer);
+            this.singleBinglogEventDeserializer = simpleSingleBinglogEventDeserializer;
         }
 
         if (this.greetingResponsePacketDeserializer == null) {
-            setGreetingResponsePacketDeserializer(new GreetingResponsePacketDeserializer());
+            this.greetingResponsePacketDeserializer = new GreetingResponsePacketDeserializer();
         }
 
         if (this.errorResponsePacketDeserializer == null) {
-            setErrorResponsePacketDeserializer(new ErrorResponsePacketDeserializer());
+            this.errorResponsePacketDeserializer = new ErrorResponsePacketDeserializer();
         }
 
         if (this.resultSetHeaderResponsePacketDeserializer == null) {
-            setResultSetHeaderResponsePacketDeserializer(new ResultSetHeaderResponsePacketDeserializer());
+            this.resultSetHeaderResponsePacketDeserializer = new ResultSetHeaderResponsePacketDeserializer();
         }
 
         if (this.resultSetFieldResponsePacketDeserializer == null) {
-            setResultSetFieldResponsePacketDeserializer(new ResultSetFieldResponsePacketDeserializer());
+            this.resultSetFieldResponsePacketDeserializer = new ResultSetFieldResponsePacketDeserializer();
         }
 
         if (this.resultSetRowResponsePacketDeserializer == null) {
-            setResultSetRowResponsePacketDeserializer(new ResultSetRowResponsePacketDeserializer());
+            this.resultSetRowResponsePacketDeserializer = new ResultSetRowResponsePacketDeserializer();
         }
         
         if (this.connection == null) {
@@ -136,14 +136,20 @@ public abstract class AbstractMysqlBinlogReaderImpl implements MysqlBinlogReader
         this.connection.close();
     }
 
-
-    
     public void receiveSettings() {
         QueryCmdPacket cmd = new QueryCmdPacket("SHOW GLOBAL VARIABLES");
         connection.writeRawPacket(cmd);
 
         RawMysqlPacket packet = connection.readRawPacket();
 
+        if (logger.isDebugEnabled()) {
+            logger.debug("receiveSettings1 response [{}]", packet);
+        }
+
+        if (packet == null) {
+            throw new RuntimeMysqlBinlogClientException("receiveSettings ERROR [ packet is null ]");
+        }
+        
         if (packet.isErrorPacket()) {
             ErrorResponsePacket errorResponsePacket = 
                     (ErrorResponsePacket) errorResponsePacketDeserializer.deserialize(
@@ -162,6 +168,11 @@ public abstract class AbstractMysqlBinlogReaderImpl implements MysqlBinlogReader
         
         for (int i = 0; i < resultSetHeaderResponsePacket.getFieldCount(); i++) {
             packet = connection.readRawPacket();
+            
+            if (logger.isDebugEnabled()) {
+                logger.debug("receiveSettings2 response [{}]", packet);
+            }
+
             if (packet.isErrorPacket()) {
                 ErrorResponsePacket errorResponsePacket = 
                         (ErrorResponsePacket) errorResponsePacketDeserializer.deserialize(
@@ -179,6 +190,11 @@ public abstract class AbstractMysqlBinlogReaderImpl implements MysqlBinlogReader
         }
 
         packet = connection.readRawPacket();
+        
+        if (logger.isDebugEnabled()) {
+            logger.debug("receiveSettings3 response [{}]", packet);
+        }
+
         while (!(packet.isEOFPacket() || packet.isOKPacket())) {
             if (packet.isErrorPacket()) {
                 ErrorResponsePacket errorResponsePacket = 
@@ -194,6 +210,11 @@ public abstract class AbstractMysqlBinlogReaderImpl implements MysqlBinlogReader
             variables.put(resultSetRowResponsePacket.getValues().get(0), resultSetRowResponsePacket.getValues().get(1));
             
             packet = connection.readRawPacket();
+            
+            if (logger.isDebugEnabled()) {
+                logger.debug("receiveSettings4 response [{}]", packet);
+            }
+
         }
     }
 
@@ -208,7 +229,7 @@ public abstract class AbstractMysqlBinlogReaderImpl implements MysqlBinlogReader
             RawMysqlPacket packet = connection.readRawPacket();
 
             if (logger.isDebugEnabled()) {
-                logger.debug("Channel Read packet [{}]", packet);
+                logger.debug("bindSettings1 response [{}]", packet);
             }
 
             if (packet.isErrorPacket()) {
@@ -232,6 +253,10 @@ public abstract class AbstractMysqlBinlogReaderImpl implements MysqlBinlogReader
         connection.writeRawPacket(cmd);
 
         RawMysqlPacket packet = connection.readRawPacket();
+        
+        if (logger.isDebugEnabled()) {
+            logger.debug("readMetaData1 response [{}]", packet);
+        }
 
         if (packet.isErrorPacket()) {
             ErrorResponsePacket errorResponsePacket = 
@@ -250,6 +275,11 @@ public abstract class AbstractMysqlBinlogReaderImpl implements MysqlBinlogReader
 
         for (int i = 0; i < resultSetHeaderResponsePacket.getFieldCount(); i++) {
             packet = connection.readRawPacket();
+            
+            if (logger.isDebugEnabled()) {
+                logger.debug("readMetaData2 response [{}]", packet);
+            }
+
 
             if (packet.isErrorPacket()) {
                 ErrorResponsePacket errorResponsePacket = 
@@ -267,6 +297,12 @@ public abstract class AbstractMysqlBinlogReaderImpl implements MysqlBinlogReader
         }
 
         packet = connection.readRawPacket();
+        
+        if (logger.isDebugEnabled()) {
+            logger.debug("readMetaData3 response [{}]", packet);
+        }
+
+        
         while (!(packet.isEOFPacket() || packet.isOKPacket())) {
             if (packet.isErrorPacket()) {
                 ErrorResponsePacket errorResponsePacket = 
@@ -279,6 +315,10 @@ public abstract class AbstractMysqlBinlogReaderImpl implements MysqlBinlogReader
                     (ResultSetRowResponsePacket)resultSetRowResponsePacketDeserializer.deserialize(
                             new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
             packet = connection.readRawPacket();
+            
+            if (logger.isDebugEnabled()) {
+                logger.debug("readMetaData4 response [{}]", packet);
+            }
 
 
             String databaseName = resultSetRowResponsePacket.getValues().get(0);
@@ -304,7 +344,7 @@ public abstract class AbstractMysqlBinlogReaderImpl implements MysqlBinlogReader
         RawMysqlPacket packet = connection.readRawPacket();
 
         if (logger.isDebugEnabled()) {
-            logger.debug("Channel Read packet [{}]", packet);
+            logger.debug("readCurrentBinlogPosition1 packet [{}]", packet);
         }
 
         if (packet.isErrorPacket()) {
@@ -325,6 +365,10 @@ public abstract class AbstractMysqlBinlogReaderImpl implements MysqlBinlogReader
         for (int i = 0; i < resultSetHeaderResponsePacket.getFieldCount(); i++) {
             packet = connection.readRawPacket();
             
+            if (logger.isDebugEnabled()) {
+                logger.debug("readCurrentBinlogPosition2 packet [{}]", packet);
+            }
+            
             if (packet.isErrorPacket()) {
                 ErrorResponsePacket errorResponsePacket = 
                         (ErrorResponsePacket) errorResponsePacketDeserializer.deserialize(
@@ -341,6 +385,11 @@ public abstract class AbstractMysqlBinlogReaderImpl implements MysqlBinlogReader
         }
 
         packet = connection.readRawPacket();
+        
+        if (logger.isDebugEnabled()) {
+            logger.debug("readCurrentBinlogPosition3 packet [{}]", packet);
+        }
+
         while (!(packet.isEOFPacket() || packet.isOKPacket())) {
             if (packet.isErrorPacket()) {
                 ErrorResponsePacket errorResponsePacket = 
@@ -354,6 +403,10 @@ public abstract class AbstractMysqlBinlogReaderImpl implements MysqlBinlogReader
                             new MysqlBinlogByteArrayInputStream(new ByteArrayInputStream(packet.getRawBody())));
             packet = connection.readRawPacket();
 
+            if (logger.isDebugEnabled()) {
+                logger.debug("readCurrentBinlogPosition4 packet [{}]", packet);
+            }
+            
             if (logger.isDebugEnabled()) {
                 logger.debug("Channel Read ResultSetRowResponsePacket [{}]", resultSetRowResponsePacket);
             }
@@ -375,8 +428,9 @@ public abstract class AbstractMysqlBinlogReaderImpl implements MysqlBinlogReader
 
         RawMysqlPacket packet = connection.readRawPacket();
 
-        logger.debug("dumpBinglog response [{}]", packet);
-
+        if (logger.isDebugEnabled()) {
+            logger.debug("dumpBinglog1 response [{}]", packet);
+        }
 
         if (packet.isErrorPacket()) {
             ErrorResponsePacket errorResponsePacket = 
@@ -422,6 +476,10 @@ public abstract class AbstractMysqlBinlogReaderImpl implements MysqlBinlogReader
      */
     public BinlogEvent readBinlogEvent() {
         RawMysqlPacket packet = connection.readRawPacket();
+        
+        if (logger.isDebugEnabled()) {
+            logger.debug("readBinlogEvent1 response [{}]", packet);
+        }
 
         if (packet.isErrorPacket()) {
             ErrorResponsePacket errorResponsePacket = 

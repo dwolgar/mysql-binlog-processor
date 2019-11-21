@@ -79,14 +79,16 @@ public class QueryEventFullTableNameExtractor implements FullTableNameExtractor<
         
         if (!found) {
             if (logger.isDebugEnabled()) {
-                logger.debug("SQL NO PATTERN MATCHED [" + sql + "]");
+                logger.debug("SQL NO PATTERN MATCHED [{}]", sql);
             }
             return null;
         }
 
         if (logger.isTraceEnabled()) {
             for (int i = 0; i <= matcher.groupCount(); i++) {
-                logger.debug("GROUP [" + i + "][" + matcher.group(i) + "]");
+                if (logger.isDebugEnabled()) {
+                    logger.debug("GROUP [{}][{}]", i, matcher.group(i));
+                }
             }
         }
         

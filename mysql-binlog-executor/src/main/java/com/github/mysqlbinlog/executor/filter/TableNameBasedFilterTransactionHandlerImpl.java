@@ -16,10 +16,8 @@
 
 package com.github.mysqlbinlog.executor.filter;
 
+
 import com.github.mysql.constant.MysqlConstants;
-import com.github.mysqlbinlog.executor.filter.FullTableNameExtractor;
-import com.github.mysqlbinlog.executor.filter.QueryEventFullTableNameExtractor;
-import com.github.mysqlbinlog.executor.filter.RowEventFullTableNameExtractor;
 import com.github.mysqlbinlog.model.event.BinlogEvent;
 import com.github.mysqlbinlog.model.event.QueryEvent;
 import com.github.mysqlbinlog.transaction.aggregator.TransactionHandler;
@@ -48,7 +46,7 @@ public class TableNameBasedFilterTransactionHandlerImpl implements TransactionHa
 
     public TableNameBasedFilterTransactionHandlerImpl() {
         this.allowedTables = new TreeSet<>();
-        this.fullTableNameExtractors = new HashMap<Integer, FullTableNameExtractor<? extends BinlogEvent>>();
+        this.fullTableNameExtractors = new HashMap<>();
         this.fullTableNameExtractors.put(MysqlConstants.QUERY_EVENT, new QueryEventFullTableNameExtractor());
         this.fullTableNameExtractors.put(MysqlConstants.UPDATE_ROWS_EVENT, new RowEventFullTableNameExtractor());
         this.fullTableNameExtractors.put(MysqlConstants.UPDATE_ROWS_EVENT_V2, new RowEventFullTableNameExtractor());
@@ -78,10 +76,8 @@ public class TableNameBasedFilterTransactionHandlerImpl implements TransactionHa
     
     @SuppressWarnings({ "rawtypes", "unchecked" })
     protected boolean filterOut(BinlogEvent event) {
-        if (this.skipNonDmEvents) {
-            if (!this.fullTableNameExtractors.containsKey(event.getHeader().getEventType())) {
-                return true;
-            }
+        if (this.skipNonDmEvents && !this.fullTableNameExtractors.containsKey(event.getHeader().getEventType())) {
+            return true;
         }
         
         FullTableNameExtractor fullTableNameExtractor = this.fullTableNameExtractors.get(event.getHeader().getEventType());
@@ -98,7 +94,7 @@ public class TableNameBasedFilterTransactionHandlerImpl implements TransactionHa
             return false;
         } else {
             if (logger.isDebugEnabled()) {
-                logger.debug("TABLE [" + fullTableName + "] SKIPPED");
+                logger.debug("TABLE [{}] SKIPPED ", fullTableName);
             }
             return true;
         }
@@ -126,7 +122,7 @@ public class TableNameBasedFilterTransactionHandlerImpl implements TransactionHa
      */
     @Override
     public boolean handle(List<BinlogEvent> events) {
-        if (events == null || events.size() <= 0) {
+        if (events == null || events.isEmpty()) {
             return false;
         }
         
@@ -141,7 +137,7 @@ public class TableNameBasedFilterTransactionHandlerImpl implements TransactionHa
             events.clear();
         }
         
-        return (events.size() > 0 ? true : false);
+        return (!events.isEmpty());
     }
 
     

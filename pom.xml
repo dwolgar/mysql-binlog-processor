@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.github.mysql</groupId>
@@ -26,6 +27,8 @@
 	<properties>
 		<jdk.version>1.8</jdk.version>
 		<junit.version>4.12</junit.version>
+		<mockito.version>3.1.0</mockito.version>
+		<powermock.version>2.0.4</powermock.version>
 		<slf4j.version>1.7.5</slf4j.version>
 		<log4j.version>1.2.16</log4j.version>
 		<mysql-binlog-common.version>0.0.1</mysql-binlog-common.version>
@@ -36,6 +39,7 @@
 			<artifactId>mysql-binlog-common</artifactId>
 			<version>${mysql-binlog-common.version}</version>
 		</dependency>
+
 		<!-- Unit Tests -->
 		<dependency>
 			<groupId>junit</groupId>
@@ -43,6 +47,22 @@
 			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
+
+ 		<!-- powermock -->
+		<dependency>
+			<groupId>org.powermock</groupId>
+			<artifactId>powermock-module-junit4</artifactId>
+			<version>${powermock.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.powermock</groupId>
+			<artifactId>powermock-api-mockito2</artifactId>
+			<version>${powermock.version}</version>
+			<scope>test</scope>
+		</dependency>
+
 
 		<!-- Logging -->
 		<dependency>

@@ -40,7 +40,7 @@ public class TransactionEventAggregator implements AggregatorContext {
     @Override
     public void addEvent(BinlogEvent event) {
         if (this.transactionEvents == null) {
-            this.transactionEvents = new ArrayList<BinlogEvent>();
+            this.transactionEvents = new ArrayList<>();
         }
         this.transactionEvents.add(event);
     }
@@ -52,7 +52,7 @@ public class TransactionEventAggregator implements AggregatorContext {
         }
 
         for (TransactionHandler transactionHandler : this.transactionHandlers) {
-            if (this.transactionEvents != null && this.transactionEvents.size() > 0) {
+            if (this.transactionEvents != null && !this.transactionEvents.isEmpty()) {
                 if (!transactionHandler.handle(this.transactionEvents)) {
                     break;
                 }
@@ -61,7 +61,9 @@ public class TransactionEventAggregator implements AggregatorContext {
             }
         }
 
-        this.transactionEvents.clear();
+        if (this.transactionEvents != null) {
+            this.transactionEvents.clear();
+        }      
     }
 
     @Override
@@ -87,7 +89,7 @@ public class TransactionEventAggregator implements AggregatorContext {
 
     public void addTransactionHandler(TransactionHandler transactionHandler) {
         if (this.transactionHandlers == null) {
-            this.transactionHandlers = new ArrayList<TransactionHandler>();
+            this.transactionHandlers = new ArrayList<>();
         }
         this.transactionHandlers.add(transactionHandler);
     }

@@ -45,4 +45,34 @@ public class EventPosition {
     public String toString() {
         return "[" + this.binlogFileName + ":" + this.position + "]";
     }
+    
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result
+                + ((binlogFileName == null) ? 0 : binlogFileName.hashCode());
+        result = prime * result + (int) (position ^ (position >>> 32));
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        EventPosition other = (EventPosition) obj;
+        if (binlogFileName == null) {
+            if (other.binlogFileName != null)
+                return false;
+        } else if (!binlogFileName.equals(other.binlogFileName))
+            return false;
+        if (position != other.position)
+            return false;
+        return true;
+    }
+
 }

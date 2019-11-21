@@ -44,7 +44,7 @@ public class SqlModeBasedFilterTransactionHandlerImpl implements TransactionHand
 
     public SqlModeBasedFilterTransactionHandlerImpl() {
         this.deniedSqlModes = 0;
-        this.deniedSqlModesString = "";
+        this.setDeniedSqlModesString("");
         this.addDeniedSqlModes = false;
     }
     
@@ -68,7 +68,7 @@ public class SqlModeBasedFilterTransactionHandlerImpl implements TransactionHand
      */
     @Override
     public boolean handle(List<BinlogEvent> events) {
-        if (events == null || events.size() <= 0) {
+        if (events == null || events.isEmpty()) {
             return false;
         }
         
@@ -79,15 +79,12 @@ public class SqlModeBasedFilterTransactionHandlerImpl implements TransactionHand
             }
         }
         
-        List<BinlogEvent> newEvents = new ArrayList<BinlogEvent>();
+        List<BinlogEvent> newEvents = new ArrayList<>();
         if (this.isAddDeniedSqlModes()) {
             QueryEvent newSqlModeEvent = new QueryEvent(first.getHeader(), null);
             newSqlModeEvent.setSql(SQL_MODE_SAVE_ORIGINAL);
             newEvents.add(newSqlModeEvent);
-/*            newSqlModeEvent = new QueryEvent(first.getHeader(), null);
-            newSqlModeEvent.setSql(String.format(SQL_MODE_INCLUDE_DENIED_MODE, this.deniedSqlModesString));
-            newEvents.add(newSqlModeEvent);
-*/        }
+        }
                 
         for (BinlogEvent event : events) {
             if (event.getHeader().getEventType() == MysqlConstants.QUERY_EVENT && !this.isQueryAllowed((QueryEvent) event)) {
@@ -131,29 +128,29 @@ public class SqlModeBasedFilterTransactionHandlerImpl implements TransactionHand
     public void setDeniedSqlModes(long deniedSqlModes) {
         this.deniedSqlModes = deniedSqlModes;
         if (deniedSqlModes == 0) {
-            this.deniedSqlModesString = "";
+            this.setDeniedSqlModesString("");
             return;
         } 
         
-        List<String> sqlModeList = new ArrayList<String>();
+        List<String> sqlModeList = new ArrayList<>();
         for (Long key : MysqlConstants.sqlModes.keySet()) {
             if ((this.deniedSqlModes & key) > 0) {
                 sqlModeList.add(MysqlConstants.sqlModes.get(key));
             }
         }
         
-        this.deniedSqlModesString = String.join(",", sqlModeList);
+        this.setDeniedSqlModesString(String.join(",", sqlModeList));
         
     }
     
     public void setDeniedSqlModes(String deniedSqlModes) {
         if (deniedSqlModes == null || deniedSqlModes.length() <= 0) {
             this.deniedSqlModes = 0;
-            this.deniedSqlModesString = "";
+            this.setDeniedSqlModesString("");
             return;
         }
         
-        this.deniedSqlModesString = deniedSqlModes;
+        this.setDeniedSqlModesString(deniedSqlModes);
         
         Set<Entry<Long, String>> sqlModes = MysqlConstants.sqlModes.entrySet();
         
@@ -174,6 +171,15 @@ public class SqlModeBasedFilterTransactionHandlerImpl implements TransactionHand
 
     public void setAddDeniedSqlModes(boolean addDeniedSqlModes) {
         this.addDeniedSqlModes = addDeniedSqlModes;
+    }
+
+
+    public String getDeniedSqlModesString() {
+        return deniedSqlModesString;
+    }
+
+    public void setDeniedSqlModesString(String deniedSqlModesString) {
+        this.deniedSqlModesString = deniedSqlModesString;
     }
 
 }
