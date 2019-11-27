@@ -1,0 +1,80 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.github.mysql</groupId>
+		<artifactId>mysql-binlog-processor</artifactId>
+		<version>0.0.1</version>
+	</parent>
+
+	<artifactId>mysql-binlog-reader-jdbc</artifactId>
+	<name>mysql-binlog-reader-jdbc</name>
+	<description>Mysql Binlog Event JDBC Reader Implementation</description>
+	<packaging>jar</packaging>
+
+	<developers>
+		<developer>
+			<id>dwolgar</id>
+			<email>dwolgar@yahoo.com</email>
+			<name>Dmitri Izofatov</name>
+		</developer>
+	</developers>
+
+	<properties>
+		<mysql-connector-java.version>8.0.18</mysql-connector-java.version>
+		<mysql-connector-java-old.version>5.1.42</mysql-connector-java-old.version>
+	</properties>
+
+	<dependencies>
+		<!-- mysql binlog reader common -->
+		<dependency>
+			<groupId>com.github.mysql</groupId>
+			<artifactId>mysql-binlog-reader-common</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<!-- Mysql JDBC -->
+	</dependencies>
+
+	<profiles>
+		<profile>
+			<id>mysql5</id>
+			<activation>
+				<property>
+					<name>mysql</name>
+					<value>mysql5</value>
+				</property>
+			</activation>
+			<dependencies>
+				<!-- Mysql JDBC -->
+				<dependency>
+					<groupId>mysql</groupId>
+					<artifactId>mysql-connector-java</artifactId>
+					<version>${mysql-connector-java-old.version}</version>
+					<scope>test</scope>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>mysql8</id>
+			<activation>
+				<property>
+					<name>mysql</name>
+					<value>mysql8</value>
+				</property>
+			</activation>
+			<dependencies>
+				<!-- Mysql JDBC -->
+				<dependency>
+					<groupId>mysql</groupId>
+					<artifactId>mysql-connector-java</artifactId>
+					<version>${mysql-connector-java.version}</version>
+					<scope>test</scope>
+				</dependency>
+			</dependencies>
+		</profile>
+	</profiles>
+
+</project>
