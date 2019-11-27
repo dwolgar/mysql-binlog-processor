@@ -90,7 +90,7 @@ public class NettyConnectionImpl extends ChannelInboundHandlerAdapter implements
 
     @Override
     public RawMysqlPacket readRawPacket() {
-        if (queuePackets.isEmpty()) {
+        if (!queuePackets.isEmpty()) {
             RawMysqlPacket packet = queuePackets.poll();
             
             if (packet.isEmpty()) {
@@ -129,6 +129,11 @@ public class NettyConnectionImpl extends ChannelInboundHandlerAdapter implements
         if (this.pipeline != null) {
             pipeline.close();
         }
+        
+        if (this.eventLoopGroup != null) {
+            eventLoopGroup.shutdownGracefully();
+        }
+
     }
 
 

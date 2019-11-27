@@ -31,18 +31,23 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import java.io.ByteArrayInputStream;
 
 public class MysqlBinlogReaderNettyImpl extends AbstractMysqlBinlogReaderImpl {
-    private EventLoopGroup workerGroup;
+/*    private EventLoopGroup workerGroup;
 
     private String masterHostname;
     private int masterPort;
+
+    private int readTimeout;
+*/
+    
     private String username;
     private String password;
 
-    private int readTimeout;
-
     @Override
     protected Connection initializeConnection() {
-        this.workerGroup = new NioEventLoopGroup();
+        
+        return this.getConnection();
+        
+/*        this.workerGroup = new NioEventLoopGroup();
 
         NettyConnectionImpl connection = new NettyConnectionImpl(workerGroup);
         connection.setReadTimeout(readTimeout);
@@ -50,7 +55,7 @@ public class MysqlBinlogReaderNettyImpl extends AbstractMysqlBinlogReaderImpl {
         connection.setPort(masterPort);
         
         return connection;
-    }
+*/    }
     
     @Override
     public void connect() {
@@ -89,7 +94,7 @@ public class MysqlBinlogReaderNettyImpl extends AbstractMysqlBinlogReaderImpl {
     }
 
 
-
+/*
     @Override
     public void close() {
         super.close();
@@ -114,6 +119,14 @@ public class MysqlBinlogReaderNettyImpl extends AbstractMysqlBinlogReaderImpl {
         this.masterPort = masterPort;
     }
 
+    public int getReadTimeout() {
+        return readTimeout;
+    }
+
+    public void setReadTimeout(int readTimeout) {
+        this.readTimeout = readTimeout;
+    }
+*/
     public String getUsername() {
         return username;
     }
@@ -130,11 +143,4 @@ public class MysqlBinlogReaderNettyImpl extends AbstractMysqlBinlogReaderImpl {
         this.password = password;
     }
 
-    public int getReadTimeout() {
-        return readTimeout;
-    }
-
-    public void setReadTimeout(int readTimeout) {
-        this.readTimeout = readTimeout;
-    }
 }
