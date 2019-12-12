@@ -24,10 +24,12 @@ public class RuntimeMysqlErrorException extends RuntimeException {
     private final ErrorResponsePacket errorResponsePacket;
     
     public RuntimeMysqlErrorException(ErrorResponsePacket errorResponsePacket) {
+        super("RuntimeMysqlErrorException [Mysql Error=" + errorResponsePacket.getErrorCode() + "-" + errorResponsePacket.getErrorMessage() + "]");
         this.errorResponsePacket = errorResponsePacket;
     }
 
     public ErrorResponsePacket getErrorResponsePacket() {
         return errorResponsePacket;
     }
+
 }

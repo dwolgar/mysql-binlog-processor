@@ -389,11 +389,14 @@ public abstract class AbstractMysqlBinlogReaderImpl implements MysqlBinlogReader
              */
         }
 
-        packet = connection.readRawPacket();
+        do {
+            packet = connection.readRawPacket();
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("readCurrentBinlogPosition3 packet [{}]", packet);
-        }
+            if (logger.isDebugEnabled()) {
+                logger.debug("readCurrentBinlogPosition3 packet [{}]", packet);
+            }
+            
+        } while(packet.isEOFPacket() || packet.isOKPacket());
 
         while (!(packet.isEOFPacket() || packet.isOKPacket())) {
             if (packet.isErrorPacket()) {
