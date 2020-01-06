@@ -16,13 +16,13 @@
 
 package com.github.mysqlbinlog.executor.jdbc;
 
-import com.github.mysqlbinlog.executor.jdbc.context.ExecutorContext;
-import com.github.mysqlbinlog.executor.jdbc.metadata.ColumnDescription;
-import com.github.mysqlbinlog.executor.jdbc.metadata.TableDescription;
 import com.github.mysqlbinlog.model.event.UpdateRowsEvent;
 import com.github.mysqlbinlog.model.event.extra.Column;
 import com.github.mysqlbinlog.model.event.extra.Pair;
 import com.github.mysqlbinlog.model.event.extra.Row;
+import com.github.mysqlbinlog.executor.jdbc.context.ExecutorContext;
+import com.github.mysqlbinlog.executor.jdbc.metadata.ColumnDescription;
+import com.github.mysqlbinlog.executor.jdbc.metadata.TableDescription;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -16,15 +16,15 @@
 
 package com.github.mysqlbinlog.executor.jdbc;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.github.mysqlbinlog.model.event.BinlogEvent;
 import com.github.mysqlbinlog.model.event.DeleteRowsEvent;
 import com.github.mysqlbinlog.model.event.QueryEvent;
 import com.github.mysqlbinlog.model.event.UpdateRowsEvent;
 import com.github.mysqlbinlog.model.event.UserVarEvent;
 import com.github.mysqlbinlog.model.event.WriteRowsEvent;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @SuppressWarnings("rawtypes")
 public class EventTypeExecutorFactory {

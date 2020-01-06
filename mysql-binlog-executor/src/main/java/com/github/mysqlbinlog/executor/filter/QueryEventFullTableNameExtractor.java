@@ -16,9 +16,10 @@
 
 package com.github.mysqlbinlog.executor.filter;
 
-import com.github.mysqlbinlog.model.event.QueryEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.mysqlbinlog.model.event.QueryEvent;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

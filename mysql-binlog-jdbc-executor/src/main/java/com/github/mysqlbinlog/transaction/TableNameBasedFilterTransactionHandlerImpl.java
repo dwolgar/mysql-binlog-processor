@@ -17,11 +17,11 @@
 package com.github.mysqlbinlog.transaction;
 
 import com.github.mysql.constant.MysqlConstants;
+import com.github.mysqlbinlog.model.event.BinlogEvent;
+import com.github.mysqlbinlog.model.event.QueryEvent;
 import com.github.mysqlbinlog.executor.filter.FullTableNameExtractor;
 import com.github.mysqlbinlog.executor.filter.QueryEventFullTableNameExtractor;
 import com.github.mysqlbinlog.executor.filter.RowEventFullTableNameExtractor;
-import com.github.mysqlbinlog.model.event.BinlogEvent;
-import com.github.mysqlbinlog.model.event.QueryEvent;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

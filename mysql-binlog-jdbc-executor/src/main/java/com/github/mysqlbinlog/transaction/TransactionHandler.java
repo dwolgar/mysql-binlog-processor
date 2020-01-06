@@ -16,9 +16,9 @@
 
 package com.github.mysqlbinlog.transaction;
 
-import com.github.mysqlbinlog.model.event.BinlogEvent;
-
 import java.util.List;
+
+import com.github.mysqlbinlog.model.event.BinlogEvent;
 
 public interface TransactionHandler {
     public boolean handle(List<BinlogEvent> events);

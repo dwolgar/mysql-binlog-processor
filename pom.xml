@@ -35,7 +35,7 @@
 	</properties>
 	<dependencies>
 		<dependency>
-			<groupId>com.github.mysql</groupId>
+			<groupId>com.github.domovoylab</groupId>
 			<artifactId>mysql-binlog-common</artifactId>
 			<version>${mysql-binlog-common.version}</version>
 		</dependency>

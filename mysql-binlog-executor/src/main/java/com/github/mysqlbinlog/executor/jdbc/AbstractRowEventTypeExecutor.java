@@ -16,8 +16,8 @@
 
 package com.github.mysqlbinlog.executor.jdbc;
 
-import com.github.mysqlbinlog.executor.jdbc.context.ExecutorContext;
 import com.github.mysqlbinlog.model.event.BinlogEvent;
+import com.github.mysqlbinlog.executor.jdbc.context.ExecutorContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -19,6 +19,7 @@ package com.github.mysqlbinlog.client.netty;
 import com.github.mysql.io.MysqlBinlogByteArrayInputStream;
 import com.github.mysql.protocol.deserializer.ResponsePacketDeserializer;
 import com.github.mysql.protocol.model.ResponsePacket;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.channel.ChannelHandlerContext;

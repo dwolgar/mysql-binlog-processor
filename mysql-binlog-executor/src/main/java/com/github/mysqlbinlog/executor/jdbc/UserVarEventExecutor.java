@@ -25,8 +25,8 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.mysqlbinlog.executor.jdbc.context.ExecutorContext;
 import com.github.mysqlbinlog.model.event.UserVarEvent;
+import com.github.mysqlbinlog.executor.jdbc.context.ExecutorContext;
 
 public class UserVarEventExecutor implements EventTypeExecutor<UserVarEvent> {
     private static final Logger logger = LoggerFactory.getLogger(UserVarEventExecutor.class);

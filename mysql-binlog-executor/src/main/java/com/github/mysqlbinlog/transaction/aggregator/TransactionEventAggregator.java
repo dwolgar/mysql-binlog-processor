@@ -16,10 +16,10 @@
 
 package com.github.mysqlbinlog.transaction.aggregator;
 
-import com.github.mysqlbinlog.model.event.BinlogEvent;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.mysqlbinlog.model.event.BinlogEvent;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -17,13 +17,13 @@
 package com.github.mysqlbinlog.executor.jdbc;
 
 import com.github.mysql.constant.MysqlConstants;
-import com.github.mysqlbinlog.executor.jdbc.context.ExecutorContext;
 import com.github.mysqlbinlog.model.event.QueryEvent;
 import com.github.mysqlbinlog.model.variable.QAutoIncrement;
 import com.github.mysqlbinlog.model.variable.QCharsetCode;
 import com.github.mysqlbinlog.model.variable.QFlags2Code;
 import com.github.mysqlbinlog.model.variable.QSQLModeCode;
 import com.github.mysqlbinlog.model.variable.StatusVariable;
+import com.github.mysqlbinlog.executor.jdbc.context.ExecutorContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

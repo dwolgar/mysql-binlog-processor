@@ -16,13 +16,13 @@
 
 package com.github.mysqlbinlog.executor.jdbc;
 
+import com.github.mysqlbinlog.model.event.BinlogEvent;
 import com.github.mysqlbinlog.executor.jdbc.EventTypeExecutor;
 import com.github.mysqlbinlog.executor.jdbc.EventTypeExecutorFactory;
 import com.github.mysqlbinlog.executor.jdbc.context.ExecutorContext;
 import com.github.mysqlbinlog.executor.jdbc.context.SimpleExecutorContextImpl;
 import com.github.mysqlbinlog.executor.jdbc.metadata.MetadataHolder;
 import com.github.mysqlbinlog.executor.jdbc.metadata.SimpleMetadataHolderImpl;
-import com.github.mysqlbinlog.model.event.BinlogEvent;
 import com.github.mysqlbinlog.transaction.aggregator.TransactionHandler;
 
 import org.slf4j.Logger;

@@ -16,14 +16,15 @@
 
 package com.github.mysqlbinlog.client.netty;
 
-import com.github.mysql.protocol.model.AuthenticateCmdPacket;
-import com.github.mysql.protocol.model.CmdPacket;
-import com.github.mysql.protocol.model.RawMysqlPacket;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.mysql.protocol.model.AuthenticateCmdPacket;
+import com.github.mysql.protocol.model.CmdPacket;
+import com.github.mysql.protocol.model.RawMysqlPacket;
 
 import javax.xml.bind.DatatypeConverter;
 
