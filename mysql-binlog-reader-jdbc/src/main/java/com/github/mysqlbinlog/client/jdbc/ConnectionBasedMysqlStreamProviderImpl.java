@@ -27,16 +27,16 @@ import java.lang.reflect.Field;
 import com.github.mysqlbinlogreader.common.exception.RuntimeMysqlBinlogClientException;
 
 public class ConnectionBasedMysqlStreamProviderImpl
-        implements MysqlStreamProvider {
-    
+implements MysqlStreamProvider {
+
     private static final String mysql8ConnectionClassName = "com.mysql.cj.jdbc.ConnectionImpl";
     private static final String mysql5ConnectionClassName = "com.mysql.jdbc.ConnectionImpl";
     private static final String mysql5aConnectionClassName = "com.mysql.jdbc.JDBC4Connection";
-    
+
     private final Object connection;
     private InputStream inputStream;
     private OutputStream outputStream;
-    
+
     public ConnectionBasedMysqlStreamProviderImpl(Object connection) {
         this.connection = connection;
     }
@@ -49,7 +49,7 @@ public class ConnectionBasedMysqlStreamProviderImpl
         if (this.connection == null) {
             throw new RuntimeMysqlBinlogClientException("Connection is null");
         }
-        
+
         if (this.connection.getClass().getCanonicalName().equalsIgnoreCase(mysql8ConnectionClassName)) {
             retrieveMysql8Streams();
         } else if (this.connection.getClass().getCanonicalName().equalsIgnoreCase(mysql5ConnectionClassName)) {
@@ -59,57 +59,57 @@ public class ConnectionBasedMysqlStreamProviderImpl
         } else {
             throw new RuntimeMysqlBinlogClientException("Connection class [" + this.connection.getClass().getCanonicalName() + "] is not supported");
         }
-        
+
     }
-    
+
     private void retrieveMysql5aStreams() {
         retrieveMysql5Streams();
     }
-    
+
     private void retrieveMysql5Streams() {
         try {
             Class<?> mysqlConnection5Class = Class.forName(mysql5ConnectionClassName);
             Field mysqlIoField = mysqlConnection5Class.getDeclaredField("io");
             mysqlIoField.setAccessible(true);
             Object mysqlIoObject = mysqlIoField.get(mysqlConnection5Class.cast(this.connection));
-            
+
             Field mysqlInputField = mysqlIoObject.getClass().getDeclaredField("mysqlInput");
             mysqlInputField.setAccessible(true);
             Field mysqlOutput = mysqlIoObject.getClass().getDeclaredField("mysqlOutput");
             mysqlOutput.setAccessible(true);
-            
+
             this.inputStream = (InputStream) mysqlInputField.get(mysqlIoObject);
             this.outputStream = (OutputStream) mysqlOutput.get(mysqlIoObject);
-            
+
         } catch (Exception e) {
             throw new RuntimeMysqlBinlogClientException(e);
         }
     }
-    
+
     private void retrieveMysql8Streams() {
         try {
             Class<?> mysqlConnection8Class = Class.forName(mysql8ConnectionClassName);
             MethodHandle getSessionMh = MethodHandles.lookup().findVirtual(mysqlConnection8Class, "getSession", MethodType.methodType(Class.forName("com.mysql.cj.NativeSession")));
             Object nativeSession = getSessionMh.invoke(this.connection);
-            
+
             MethodHandle getProtocolMh = MethodHandles.lookup().findVirtual(nativeSession.getClass(), "getProtocol", MethodType.methodType(Class.forName("com.mysql.cj.protocol.a.NativeProtocol")));
             Object protocol = getProtocolMh.invoke(nativeSession);
-            
+
             MethodHandle getSocketConnectionMh = MethodHandles.lookup().findVirtual(protocol.getClass(), "getSocketConnection", MethodType.methodType(Class.forName("com.mysql.cj.protocol.SocketConnection")));
             Object socketConnection = getSocketConnectionMh.invoke(protocol);
-            
+
             MethodHandle getMysqlInputMh = MethodHandles.lookup().findVirtual(socketConnection.getClass(), "getMysqlInput", MethodType.methodType(Class.forName("com.mysql.cj.protocol.FullReadInputStream")));
             MethodHandle getMysqlOutputMh = MethodHandles.lookup().findVirtual(socketConnection.getClass(), "getMysqlOutput", MethodType.methodType(Class.forName("java.io.BufferedOutputStream")));
-            
+
             this.inputStream = (InputStream) getMysqlInputMh.invoke(socketConnection);
             this.outputStream = (OutputStream) getMysqlOutputMh.invoke(socketConnection);
 
         } catch (Throwable e) {
             throw new RuntimeMysqlBinlogClientException(e);
         }
-        
+
     }
-    
+
     /* (non-Javadoc)
      * @see com.github.mysqlbinlog.client.jdbc.MysqlStreamProvider#getInputStream()
      */

@@ -14,13 +14,13 @@
  *
  */
 
-package com.github.mysqlbinlog.executor.jdbc.context;
+package com.github.mysqlbinlog.executor.context;
 
 import java.sql.Connection;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.github.mysqlbinlog.executor.jdbc.metadata.MetadataHolder;
+import com.github.mysqlbinlog.executor.metadata.MetadataHolder;
 
 public class SimpleExecutorContextImpl implements ExecutorContext {
     private Connection connection;

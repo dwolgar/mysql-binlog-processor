@@ -38,7 +38,7 @@ public class MysqlBinlogReaderJdbcImplTest {
     @Before
     public void init() {
         
-        ConnectionJdbcImpl connectionJdbc = new ConnectionJdbcImpl("jdbc:mysql://mysql-hostmame", "username", "password");
+        ConnectionJdbcImpl connectionJdbc = new ConnectionJdbcImpl("jdbc:mysql://mysql-hostname", "username", "password");
         connectionJdbc.setJdbcDriverClassName(jdbcDriverClassName);
         
         mysqlBinlogReader = new MysqlBinlogReaderJdbcImpl();

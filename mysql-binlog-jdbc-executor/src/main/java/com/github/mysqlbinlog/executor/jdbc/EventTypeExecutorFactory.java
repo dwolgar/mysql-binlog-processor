@@ -23,16 +23,17 @@ import com.github.mysqlbinlog.model.event.BinlogEvent;
 import com.github.mysqlbinlog.model.event.DeleteRowsEvent;
 import com.github.mysqlbinlog.model.event.QueryEvent;
 import com.github.mysqlbinlog.model.event.UpdateRowsEvent;
+import com.github.mysqlbinlog.model.event.UserVarEvent;
 import com.github.mysqlbinlog.model.event.WriteRowsEvent;
 
 @SuppressWarnings("rawtypes")
 public class EventTypeExecutorFactory {
-    private Map<Class, EventTypeExecutor<?>> classExecuterMap;
+    private Map<Class, EventTypeExecutor<? extends BinlogEvent>> classExecuterMap;
     private NopEventExecutor nopEventExecutor;
 
     public EventTypeExecutorFactory() {
         this.nopEventExecutor = new NopEventExecutor();
-        this.classExecuterMap = new HashMap<Class, EventTypeExecutor<?>>();
+        this.classExecuterMap = new HashMap<>();
         this.createDefaultAppliers();
     }
     
@@ -41,10 +42,11 @@ public class EventTypeExecutorFactory {
         classExecuterMap.put(WriteRowsEvent.class, new WriteRowsEventTypeExecutor());
         classExecuterMap.put(DeleteRowsEvent.class, new DeleteRowsEventTypeExecutor());
         classExecuterMap.put(UpdateRowsEvent.class, new UpdateRowsEventTypeExecutor());
+        classExecuterMap.put(UserVarEvent.class, new UserVarEventExecutor());
     }
     
-    public EventTypeExecutor<?> getEventExecutor(BinlogEvent event) {
-        EventTypeExecutor<?> eventExecutor = this.classExecuterMap.get(event.getClass());
+    public EventTypeExecutor<? extends BinlogEvent> getEventExecutor(BinlogEvent event) {
+        EventTypeExecutor<? extends BinlogEvent> eventExecutor = this.classExecuterMap.get(event.getClass());
         if (eventExecutor == null) {
             eventExecutor = this.nopEventExecutor;
         }

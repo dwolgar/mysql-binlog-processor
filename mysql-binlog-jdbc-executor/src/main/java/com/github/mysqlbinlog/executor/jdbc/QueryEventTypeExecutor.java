@@ -17,13 +17,13 @@
 package com.github.mysqlbinlog.executor.jdbc;
 
 import com.github.mysql.constant.MysqlConstants;
+import com.github.mysqlbinlog.executor.context.ExecutorContext;
 import com.github.mysqlbinlog.model.event.QueryEvent;
 import com.github.mysqlbinlog.model.variable.QAutoIncrement;
 import com.github.mysqlbinlog.model.variable.QCharsetCode;
 import com.github.mysqlbinlog.model.variable.QFlags2Code;
 import com.github.mysqlbinlog.model.variable.QSQLModeCode;
 import com.github.mysqlbinlog.model.variable.StatusVariable;
-import com.github.mysqlbinlog.transaction.context.ExecutorContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,13 +46,23 @@ public class QueryEventTypeExecutor implements EventTypeExecutor<QueryEvent> {
 
     private String currentDatabaseName;
     private long currentTimestamp;
-
-    private boolean isAutocommit;
-
     private List<String> sqlStatements = new ArrayList<String>();
+    
+    
+    private String setCurrentDatabaseTemplate;
+
+    private boolean includeSetTimestamp; 
+    private String setTimestampTemplate;
+
+    private boolean includeStatusVariables;
+
 
 
     public QueryEventTypeExecutor() {
+        this.setCurrentDatabaseTemplate = "USE %s";
+        this.setTimestampTemplate = "SET TIMESTAMP=%d";
+        this.includeSetTimestamp = true;
+        this.includeStatusVariables = true;
     }
 
     private boolean useSetDatabase(String sql) {
@@ -72,10 +82,15 @@ public class QueryEventTypeExecutor implements EventTypeExecutor<QueryEvent> {
         try {
             statement = connection.createStatement();
             for (String sql : sqlStatements) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("SQL in batch [" + sql + "]");
+                }
                 statement.addBatch(sql);
             }
             int[] result = statement.executeBatch();
-            logger.info("BATCH RESULT [" + Arrays.toString(result) + "]");
+            if (logger.isDebugEnabled()) {
+                logger.debug("BATCH RESULT [" + Arrays.toString(result) + "]");
+            }
 
         } catch (Exception e) {
             logger.error("ERROR [" + e.getMessage() + "]", e);
@@ -93,7 +108,7 @@ public class QueryEventTypeExecutor implements EventTypeExecutor<QueryEvent> {
     }
 
     private String getSqlChangeDatabaseName(String dbName) {
-        return "USE " + dbName;
+        return String.format(this.setCurrentDatabaseTemplate, dbName);
     }
 
     private void setDatabase(String dbName) {
@@ -101,7 +116,6 @@ public class QueryEventTypeExecutor implements EventTypeExecutor<QueryEvent> {
             this.currentDatabaseName = dbName;
             String sql = getSqlChangeDatabaseName(dbName);
             if (sql != null && sql.length() > 0) {
-                logger.debug("SQL in batch [" + sql + "]");
                 sqlStatements.add(sql);
             }
         }
@@ -116,17 +130,21 @@ public class QueryEventTypeExecutor implements EventTypeExecutor<QueryEvent> {
             if (var instanceof QFlags2Code) {
                 QFlags2Code temp = (QFlags2Code) var;
                 int flags = temp.getFlags();
-                this.isAutocommit = (flags & MysqlConstants.OPTION_NOT_AUTOCOMMIT) == 0;
+                //boolean isAutocommit = (flags & MysqlConstants.OPTION_NOT_AUTOCOMMIT) == 0;
                 boolean isAutoisnull = (flags & MysqlConstants.OPTION_AUTO_IS_NULL) > 0;
                 boolean isNoForeignKeyChecks  = (flags & MysqlConstants.OPTION_NO_FOREIGN_KEY_CHECKS) > 0;
                 boolean isRelaxedUniqueChecks = (flags & MysqlConstants.OPTION_RELAXED_UNIQUE_CHECKS) > 0;
 
                 this.sqlStatements.add(                            
+                        "SET @@session.sql_auto_is_null=" + (isAutoisnull ? 1 : 0) + ", "
+                                + "@@session.foreign_key_checks=" + (isNoForeignKeyChecks ? 0 : 1) + ", "
+                                + "@@session.unique_checks=" + (isRelaxedUniqueChecks ? 0 : 1));
+/*                
                         "SET @@session.autocommit=" + (isAutocommit ? 1 : 0) + ", " 
                                 + "@@session.sql_auto_is_null=" + (isAutoisnull ? 1 : 0) + ", "
                                 + "@@session.foreign_key_checks=" + (isNoForeignKeyChecks ? 0 : 1) + ", "
                                 + "@@session.unique_checks=" + (isRelaxedUniqueChecks ? 0 : 1));
-            }
+*/            }
 
             if (var instanceof QSQLModeCode) {
                 QSQLModeCode temp = (QSQLModeCode) var;
@@ -140,8 +158,10 @@ public class QueryEventTypeExecutor implements EventTypeExecutor<QueryEvent> {
                             sqlModeList.add(MysqlConstants.sqlModes.get(key));
                         }
                     }
-                    this.sqlStatements.add(                            
-                            "SET @@session.sql_mode='" + String.join(",", sqlModeList) + "'");
+                    this.sqlStatements.add(
+                            "SET @@session.sql_mode=" + sqlMode);
+//                    this.sqlStatements.add(                            
+//                            "SET @@session.sql_mode='" + String.join(",", sqlModeList) + "'");
                 } else {
                     this.sqlStatements.add(                            
                             "SET @@session.sql_mode=''");
@@ -167,23 +187,25 @@ public class QueryEventTypeExecutor implements EventTypeExecutor<QueryEvent> {
             }
         }
     }
+    
+    protected String getSetTimestampString(long timestamp) {
+        return String.format(this.setTimestampTemplate, timestamp);
+    }
 
     private void setTimestamp(long timestamp) {
         if (this.currentTimestamp != timestamp) {
             this.currentTimestamp = timestamp;
-            String sql = "SET TIMESTAMP=" + (timestamp / 1000);
+            String sql = getSetTimestampString(timestamp / 1000);
             if (sql != null && sql.length() > 0) {
-                logger.debug("SQL in batch [" + sql + "]");
                 this.sqlStatements.add(sql);
             }
         }
     }
-
+    
     private void setQuery(String query) {
-        logger.debug("SQL in batch [" + query + "]");
         if (!"BEGIN".equalsIgnoreCase(query) && !"COMMIT".equalsIgnoreCase(query) && !"ROLLBACK".equalsIgnoreCase(query)) {
             this.sqlStatements.add(query);
-        }
+        } 
     }
 
     /* (non-Javadoc)
@@ -191,16 +213,52 @@ public class QueryEventTypeExecutor implements EventTypeExecutor<QueryEvent> {
      */
     @Override
     public void execute(ExecutorContext context, QueryEvent event) {
+        
         if (this.useSetDatabase(event.getSql())) {
             setDatabase(event.getDatabaseName());
-        } else {
-            this.currentDatabaseName = null;
         }
-
-        setStatusVariables(event.getStatusVariables());
-        setTimestamp(event.getHeader().getTimestamp());
+        
+        if (includeStatusVariables) {
+            setStatusVariables(event.getStatusVariables());
+        }
+        
+        if (this.includeSetTimestamp) {
+            setTimestamp(event.getHeader().getTimestamp());
+        }
+        
         setQuery(event.getSql());
         executeContext(context);
     }
+    
+    public String getSetCurrentDatabaseTemplate() {
+        return setCurrentDatabaseTemplate;
+    }
 
+    public void setSetCurrentDatabaseTemplate(String setCurrentDatabaseTemplate) {
+        this.setCurrentDatabaseTemplate = setCurrentDatabaseTemplate;
+    }
+
+    public String getSetTimestampTemplate() {
+        return setTimestampTemplate;
+    }
+
+    public void setSetTimestampTemplate(String setTimestampTemplate) {
+        this.setTimestampTemplate = setTimestampTemplate;
+    }
+
+    public boolean isIncludeSetTimestamp() {
+        return includeSetTimestamp;
+    }
+
+    public void setIncludeSetTimestamp(boolean includeSetTimestamp) {
+        this.includeSetTimestamp = includeSetTimestamp;
+    }
+
+    public boolean isIncludeStatusVariables() {
+        return includeStatusVariables;
+    }
+
+    public void setIncludeStatusVariables(boolean includeStatusVariables) {
+        this.includeStatusVariables = includeStatusVariables;
+    }
 }

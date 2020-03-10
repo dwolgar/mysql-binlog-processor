@@ -33,6 +33,12 @@
 			<artifactId>mysql-binlog-reader-common</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		
+		<dependency>
+			<groupId>com.github.mysql</groupId>
+			<artifactId>mysql-binlog-executor</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 
 		<!-- MYSQL -->
 		<dependency>

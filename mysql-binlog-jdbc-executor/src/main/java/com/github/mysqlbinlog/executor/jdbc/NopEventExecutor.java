@@ -17,7 +17,7 @@
 package com.github.mysqlbinlog.executor.jdbc;
 
 import com.github.mysqlbinlog.model.event.BinlogEvent;
-import com.github.mysqlbinlog.transaction.context.ExecutorContext;
+import com.github.mysqlbinlog.executor.context.ExecutorContext;
 
 public class NopEventExecutor implements EventTypeExecutor<BinlogEvent> {
 

@@ -22,6 +22,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Driver;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Enumeration;
 
 import org.slf4j.Logger;
@@ -110,11 +113,11 @@ public class ConnectionJdbcImpl implements Connection {
             } catch (Exception e) {
                 throw new RuntimeMysqlBinlogClientException(e);
             }
+            
         } 
+        
+        this.mysqlStreamProvider = new ConnectionBasedMysqlStreamProviderImpl(this.connection);
 
-        if (this.mysqlStreamProvider == null) {
-            this.mysqlStreamProvider = new ConnectionBasedMysqlStreamProviderImpl(this.connection);
-        }
         mysqlStreamProvider.retrieveStreams();
         this.inputStream = mysqlStreamProvider.getInputStream();
         this.outputStream = mysqlStreamProvider.getOutputStream();
@@ -126,6 +129,7 @@ public class ConnectionJdbcImpl implements Connection {
     public void close() {
         try {
             this.connection.close();
+            this.connection = null;
         } catch (Exception e) {
             throw new RuntimeMysqlBinlogClientException(e);
         }

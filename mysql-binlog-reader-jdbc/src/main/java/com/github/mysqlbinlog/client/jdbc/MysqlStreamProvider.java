@@ -23,5 +23,4 @@ public interface MysqlStreamProvider {
     public void retrieveStreams();
     public InputStream getInputStream();
     public OutputStream getOutputStream();
-
 }

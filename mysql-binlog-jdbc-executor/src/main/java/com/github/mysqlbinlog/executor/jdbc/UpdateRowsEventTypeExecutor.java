@@ -22,7 +22,7 @@ import com.github.mysqlbinlog.model.event.extra.Pair;
 import com.github.mysqlbinlog.model.event.extra.Row;
 import com.github.mysqlbinlog.executor.metadata.ColumnDescription;
 import com.github.mysqlbinlog.executor.metadata.TableDescription;
-import com.github.mysqlbinlog.transaction.context.ExecutorContext;
+import com.github.mysqlbinlog.executor.context.ExecutorContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

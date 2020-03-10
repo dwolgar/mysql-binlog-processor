@@ -16,8 +16,8 @@
 
 package com.github.mysqlbinlog.executor.jdbc;
 
+import com.github.mysqlbinlog.executor.context.ExecutorContext;
 import com.github.mysqlbinlog.model.event.BinlogEvent;
-import com.github.mysqlbinlog.executor.jdbc.context.ExecutorContext;
 
 public interface EventTypeExecutor<T extends BinlogEvent> {
     public void execute(ExecutorContext context, T event);

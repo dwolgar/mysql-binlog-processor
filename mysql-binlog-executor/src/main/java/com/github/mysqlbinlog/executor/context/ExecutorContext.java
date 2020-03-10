@@ -14,8 +14,20 @@
  *
  */
 
-package com.github.mysqlbinlog.executor.jdbc.metadata;
+package com.github.mysqlbinlog.executor.context;
 
-public interface MetadataHolder {
-    public TableDescription getTableMetaData(String database, String table);
+import java.sql.Connection;
+
+import com.github.mysqlbinlog.executor.metadata.MetadataHolder;
+
+public interface ExecutorContext {
+    public Connection getConnection();
+    
+    public MetadataHolder getMetadataHolder();
+    
+    public void setValue(String name, Object value);
+    
+    public Object getValue(String name);
+    
+    public void resetValues();
 }

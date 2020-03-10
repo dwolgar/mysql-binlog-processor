@@ -25,7 +25,7 @@
 	<properties>
 		<mysql-connector-java.version>8.0.18</mysql-connector-java.version>
 		<mysql-connector-java-old.version>5.1.42</mysql-connector-java-old.version>
-		<wix-embedded-mysql.version>4.6.1</wix-embedded-mysql.version>
+		<vagrant.directory>${basedir}/additional/vagrant</vagrant.directory>
 	</properties>
 
 	<dependencies>
@@ -35,7 +35,17 @@
 			<artifactId>mysql-binlog-reader-common</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+
+		<!-- Default Mysql JDBC -->
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>${mysql-connector-java.version}</version>
+			<scope>test</scope>
+		</dependency>
+
 	</dependencies>
+
 
 	<profiles>
 		<profile>
@@ -46,6 +56,14 @@
 					<value>mysql5</value>
 				</property>
 			</activation>
+
+			<properties>
+				<mysql.driverClassName>com.mysql.jdbc.Driver</mysql.driverClassName>
+				<mysql.connectionUrl>jdbc:mysql://localhost:33065</mysql.connectionUrl>
+				<mysql.username>testuser</mysql.username>
+				<mysql.password>test</mysql.password>
+			</properties>
+
 			<dependencies>
 				<!-- Mysql JDBC -->
 				<dependency>
@@ -55,20 +73,8 @@
 					<scope>test</scope>
 				</dependency>
 			</dependencies>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-        				<artifactId>maven-surefire-plugin</artifactId>
-        				<configuration>
-        					<systemPropertyVariables>
-        						<mysql.version>mysql5</mysql.version>
-        					</systemPropertyVariables>
-        				</configuration>
-					</plugin>
-				</plugins>
-			</build>
 		</profile>
+
 		<profile>
 			<id>mysql8</id>
 			<activation>
@@ -77,6 +83,13 @@
 					<value>mysql8</value>
 				</property>
 			</activation>
+			<properties>
+				<mysql.driverClassName>com.mysql.cj.jdbc.Driver</mysql.driverClassName>
+				<mysql.connectionUrl>jdbc:mysql://localhost:33068</mysql.connectionUrl>
+				<mysql.username>testuser</mysql.username>
+				<mysql.password>test</mysql.password>
+			</properties>
+
 			<dependencies>
 				<!-- Mysql JDBC -->
 				<dependency>
@@ -86,20 +99,131 @@
 					<scope>test</scope>
 				</dependency>
 			</dependencies>
-						<build>
+		</profile>
+
+		<profile>
+			<id>vagrant-destroy</id>
+			<activation>
+				<property>
+					<name>mysql</name>
+					<value>destroy</value>
+				</property>
+			</activation>
+			<build>
 				<plugins>
 					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-        				<artifactId>maven-surefire-plugin</artifactId>
-        				<configuration>
-        					<systemPropertyVariables>
-        						<mysql.version>mysql8</mysql.version>
-        					</systemPropertyVariables>
-        				</configuration>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>exec-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>vagrant-vm-destroy</id>
+								<goals>
+									<goal>exec</goal>
+								</goals>
+								<configuration>
+									<workingDirectory>${vagrant.directory}</workingDirectory>
+									<executable>vagrant</executable>
+									<arguments>
+										<argument>destroy</argument>
+										<argument>--force</argument>
+									</arguments>
+								</configuration>
+							</execution>
+						</executions>
 					</plugin>
 				</plugins>
 			</build>
 		</profile>
 	</profiles>
+
+	<build>
+		<resources>
+			<resource>
+				<directory>src/test/resources</directory>
+				<filtering>true</filtering>
+			</resource>
+		</resources>
+
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<configuration>
+					<!-- specify UTF-8, ISO-8859-1 or any other file encoding -->
+					<encoding>UTF-8</encoding>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<exclude>**/*IT.java</exclude>
+					</excludes>
+					<systemPropertyVariables>
+						<profileId>${project.activeProfiles[0].id}</profileId>
+					</systemPropertyVariables>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<version>2.15</version>
+				<configuration>
+					<includes>
+						<include>**/*IT.java</include>
+					</includes>
+					<systemPropertyVariables>
+						<profileId>${project.activeProfiles[0].id}</profileId>
+					</systemPropertyVariables>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>add-integration-test-resources</id>
+						<phase>generate-test-resources</phase>
+						<goals>
+							<goal>add-test-resource</goal>
+						</goals>
+						<configuration>
+							<resources>
+								<resource>
+									<filtering>true</filtering>
+									<directory>src/test/resources</directory>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<!-- <executions> <execution> <id>vagrant-vm-up</id> <phase>pre-integration-test</phase> 
+					<goals> <goal>exec</goal> </goals> <configuration> <workingDirectory>${vagrant.directory}</workingDirectory> 
+					<executable>vagrant</executable> <arguments> <argument>up</argument> </arguments> 
+					</configuration> </execution> <execution> <id>vagrant-vm-halt</id> <phase>post-integration-test</phase> 
+					<goals> <goal>exec</goal> </goals> <configuration> <workingDirectory>${vagrant.directory}</workingDirectory> 
+					<executable>vagrant</executable> <arguments> <argument>halt</argument> </arguments> 
+					</configuration> </execution> </executions> -->
+			</plugin>
+		</plugins>
+	</build>
+
 
 </project>
