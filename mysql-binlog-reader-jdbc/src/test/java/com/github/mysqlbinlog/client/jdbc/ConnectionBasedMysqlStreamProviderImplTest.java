@@ -40,11 +40,11 @@ public class ConnectionBasedMysqlStreamProviderImplTest {
         PowerMockito.mockStatic(DriverManager.class);
 
         this.connection = DriverManager.getConnection("jdbc:mysql://mysql-hostmame", "username", "password");
-        this.mysqlStreamProvider = new ConnectionBasedMysqlStreamProviderImpl(this.connection);
+        this.mysqlStreamProvider = new ConnectionBasedMysqlStreamProviderImpl();
     }
     
     @Test(expected = RuntimeMysqlBinlogClientException.class)
     public void retrieveStreamsTest() {
-        mysqlStreamProvider.retrieveStreams();
+        mysqlStreamProvider.retrieveStreams(this.connection);
     }
 }

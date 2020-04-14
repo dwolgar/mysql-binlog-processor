@@ -20,7 +20,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 public interface MysqlStreamProvider {
-    public void retrieveStreams();
+    public void retrieveStreams(Object conn);
     public InputStream getInputStream();
     public OutputStream getOutputStream();
 }

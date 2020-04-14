@@ -33,45 +33,41 @@ implements MysqlStreamProvider {
     private static final String mysql5ConnectionClassName = "com.mysql.jdbc.ConnectionImpl";
     private static final String mysql5aConnectionClassName = "com.mysql.jdbc.JDBC4Connection";
 
-    private final Object connection;
     private InputStream inputStream;
     private OutputStream outputStream;
 
-    public ConnectionBasedMysqlStreamProviderImpl(Object connection) {
-        this.connection = connection;
-    }
-
+   
     /* (non-Javadoc)
      * @see com.github.mysqlbinlog.client.jdbc.MysqlStreamProvider#retrieveStreams()
      */
     @Override
-    public void retrieveStreams() {
-        if (this.connection == null) {
+    public void retrieveStreams(Object connection) {
+        if (connection == null) {
             throw new RuntimeMysqlBinlogClientException("Connection is null");
         }
 
-        if (this.connection.getClass().getCanonicalName().equalsIgnoreCase(mysql8ConnectionClassName)) {
-            retrieveMysql8Streams();
-        } else if (this.connection.getClass().getCanonicalName().equalsIgnoreCase(mysql5ConnectionClassName)) {
-            retrieveMysql5Streams();
-        } else if (this.connection.getClass().getCanonicalName().equalsIgnoreCase(mysql5aConnectionClassName)) {
-            retrieveMysql5aStreams();
+        if (connection.getClass().getCanonicalName().equalsIgnoreCase(mysql8ConnectionClassName)) {
+            retrieveMysql8Streams(connection);
+        } else if (connection.getClass().getCanonicalName().equalsIgnoreCase(mysql5ConnectionClassName)) {
+            retrieveMysql5Streams(connection);
+        } else if (connection.getClass().getCanonicalName().equalsIgnoreCase(mysql5aConnectionClassName)) {
+            retrieveMysql5aStreams(connection);
         } else {
-            throw new RuntimeMysqlBinlogClientException("Connection class [" + this.connection.getClass().getCanonicalName() + "] is not supported");
+            throw new RuntimeMysqlBinlogClientException("Connection class [" + this.getClass().getCanonicalName() + "] is not supported");
         }
 
     }
 
-    private void retrieveMysql5aStreams() {
-        retrieveMysql5Streams();
+    private void retrieveMysql5aStreams(Object connection) {
+        retrieveMysql5Streams(connection);
     }
 
-    private void retrieveMysql5Streams() {
+    private void retrieveMysql5Streams(Object connection) {
         try {
             Class<?> mysqlConnection5Class = Class.forName(mysql5ConnectionClassName);
             Field mysqlIoField = mysqlConnection5Class.getDeclaredField("io");
             mysqlIoField.setAccessible(true);
-            Object mysqlIoObject = mysqlIoField.get(mysqlConnection5Class.cast(this.connection));
+            Object mysqlIoObject = mysqlIoField.get(mysqlConnection5Class.cast(connection));
 
             Field mysqlInputField = mysqlIoObject.getClass().getDeclaredField("mysqlInput");
             mysqlInputField.setAccessible(true);
@@ -86,11 +82,11 @@ implements MysqlStreamProvider {
         }
     }
 
-    private void retrieveMysql8Streams() {
+    private void retrieveMysql8Streams(Object connection) {
         try {
             Class<?> mysqlConnection8Class = Class.forName(mysql8ConnectionClassName);
             MethodHandle getSessionMh = MethodHandles.lookup().findVirtual(mysqlConnection8Class, "getSession", MethodType.methodType(Class.forName("com.mysql.cj.NativeSession")));
-            Object nativeSession = getSessionMh.invoke(this.connection);
+            Object nativeSession = getSessionMh.invoke(connection);
 
             MethodHandle getProtocolMh = MethodHandles.lookup().findVirtual(nativeSession.getClass(), "getProtocol", MethodType.methodType(Class.forName("com.mysql.cj.protocol.a.NativeProtocol")));
             Object protocol = getProtocolMh.invoke(nativeSession);
@@ -126,7 +122,4 @@ implements MysqlStreamProvider {
         return outputStream;
     }
 
-    public Object getConnection() {
-        return connection;
-    }
-}
+  }

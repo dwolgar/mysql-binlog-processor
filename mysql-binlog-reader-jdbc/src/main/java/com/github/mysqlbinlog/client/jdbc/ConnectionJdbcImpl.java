@@ -116,9 +116,11 @@ public class ConnectionJdbcImpl implements Connection {
             
         } 
         
-        this.mysqlStreamProvider = new ConnectionBasedMysqlStreamProviderImpl(this.connection);
+        if (this.mysqlStreamProvider == null) {
+            this.mysqlStreamProvider = new ConnectionBasedMysqlStreamProviderImpl();
+        }
 
-        mysqlStreamProvider.retrieveStreams();
+        mysqlStreamProvider.retrieveStreams(this.connection);
         this.inputStream = mysqlStreamProvider.getInputStream();
         this.outputStream = mysqlStreamProvider.getOutputStream();
     }

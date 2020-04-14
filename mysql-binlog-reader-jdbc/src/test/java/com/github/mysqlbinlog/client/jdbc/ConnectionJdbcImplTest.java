@@ -66,7 +66,7 @@ public class ConnectionJdbcImplTest {
         }
         
         @Override
-        public void retrieveStreams() {
+        public void retrieveStreams(Object connection) {
             return;
         }
         
