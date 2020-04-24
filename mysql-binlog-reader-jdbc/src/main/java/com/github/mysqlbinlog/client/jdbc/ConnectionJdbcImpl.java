@@ -22,9 +22,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Driver;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Enumeration;
 
 import org.slf4j.Logger;
@@ -40,168 +37,171 @@ import com.github.mysqlbinlogreader.common.Connection;
 import com.github.mysqlbinlogreader.common.exception.RuntimeMysqlBinlogClientException;
 
 public class ConnectionJdbcImpl implements Connection {
-    private static final Logger logger = LoggerFactory.getLogger(ConnectionJdbcImpl.class);
+	private static final Logger logger = LoggerFactory.getLogger(ConnectionJdbcImpl.class);
 
-    private String jdbcDriverClassName = "com.mysql.cj.jdbc.Driver";
+	private String jdbcDriverClassName = "com.mysql.cj.jdbc.Driver";
 
-    private ResponsePacketDeserializer responsePacketDeserializer;
+	private ResponsePacketDeserializer responsePacketDeserializer;
 
-    private MysqlStreamProvider mysqlStreamProvider;
+	private MysqlStreamProvider mysqlStreamProvider;
 
-    private java.sql.Connection connection;
-    private InputStream inputStream;
-    private OutputStream outputStream;
+	private java.sql.Connection connection;
+	private InputStream inputStream;
+	private OutputStream outputStream;
 
-    private final String connectionString;
-    private final String username;
-    private final String password;
+	private final String connectionString;
+	private final String username;
+	private final String password;
 
-    public ConnectionJdbcImpl(java.sql.Connection connection) {
-        this.connection = connection;
-        this.connectionString = null;
-        this.username = null;
-        this.password = null;
-        this.responsePacketDeserializer = new RawResponsePacketDeserializer();
-    }
+	public ConnectionJdbcImpl(java.sql.Connection connection) {
+		this.connection = connection;
+		this.connectionString = null;
+		this.username = null;
+		this.password = null;
+		this.responsePacketDeserializer = new RawResponsePacketDeserializer();
+	}
 
-    public ConnectionJdbcImpl(String connectionString, String username, String password) {
-        this.connectionString = connectionString;
-        this.username = username;
-        this.password = password;
-        this.responsePacketDeserializer = new RawResponsePacketDeserializer();
-    }
+	public ConnectionJdbcImpl(String connectionString, String username, String password) {
+		this.connectionString = connectionString;
+		this.username = username;
+		this.password = password;
+		this.responsePacketDeserializer = new RawResponsePacketDeserializer();
+	}
 
-    private void registerJdbcDriver() {
-        try {
-            if (logger.isDebugEnabled()) {
-                logger.debug("Loading db drivers...[{}]", jdbcDriverClassName);
-            }
+	private void registerJdbcDriver() {
+		try {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Loading db drivers...[{}]", jdbcDriverClassName);
+			}
 
-            boolean registered = false;
-            Enumeration<Driver> drivers = DriverManager.getDrivers();
-            if (drivers != null) {
-                while (drivers.hasMoreElements()) {
-                    Driver driver = drivers.nextElement();
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Registered Driver [{}]", driver.getClass().getCanonicalName());
-                    }
-                    if (this.jdbcDriverClassName.equalsIgnoreCase(driver.getClass().getCanonicalName())) {
-                        registered = true;
-                        break;
-                    }
-                }
-            }
+			boolean registered = false;
+			Enumeration<Driver> drivers = DriverManager.getDrivers();
+			if (drivers != null) {
+				while (drivers.hasMoreElements()) {
+					Driver driver = drivers.nextElement();
+					if (logger.isDebugEnabled()) {
+						logger.debug("Registered Driver [{}]", driver.getClass().getCanonicalName());
+					}
+					if (this.jdbcDriverClassName.equalsIgnoreCase(driver.getClass().getCanonicalName())) {
+						registered = true;
+						break;
+					}
+				}
+			}
 
-            if (!registered) {
-                DriverManager.registerDriver((Driver) Class.forName(jdbcDriverClassName).newInstance());
-            }
-        } catch (Exception e) {
-            logger.error("Didn't find any Mysql Driver", e);
-        }
+			if (!registered) {
+				DriverManager.registerDriver((Driver) Class.forName(jdbcDriverClassName).newInstance());
+			}
+		} catch (Exception e) {
+			logger.error("Didn't find any Mysql Driver", e);
+		}
 
-    }
+	}
 
-    /* (non-Javadoc)
-     * @see com.github.mysqlbinlog.client.jdbc.Connection#connect()
-     */
-    public void connect() {
-        if (this.connection == null) {
-            try {
-                registerJdbcDriver();
+	/* (non-Javadoc)
+	 * @see com.github.mysqlbinlog.client.jdbc.Connection#connect()
+	 */
+	public void connect() {
+		if (this.connection == null) {
+			try {
+				registerJdbcDriver();
 
-                this.connection = DriverManager.getConnection(this.connectionString, this.username, this.password);
-            } catch (Exception e) {
-                throw new RuntimeMysqlBinlogClientException(e);
-            }
-            
-        } 
-        
-        if (this.mysqlStreamProvider == null) {
-            this.mysqlStreamProvider = new ConnectionBasedMysqlStreamProviderImpl();
-        }
+				this.connection = DriverManager.getConnection(this.connectionString, this.username, this.password);
+			} catch (Exception e) {
+				throw new RuntimeMysqlBinlogClientException(e);
+			}
 
-        mysqlStreamProvider.retrieveStreams(this.connection);
-        this.inputStream = mysqlStreamProvider.getInputStream();
-        this.outputStream = mysqlStreamProvider.getOutputStream();
-    }
+		} 
 
-    /* (non-Javadoc)
-     * @see com.github.mysqlbinlog.client.jdbc.Connection#close()
-     */
-    public void close() {
-        try {
-            this.connection.close();
-            this.connection = null;
-        } catch (Exception e) {
-            throw new RuntimeMysqlBinlogClientException(e);
-        }
-    }
+		if (this.mysqlStreamProvider == null) {
+			this.mysqlStreamProvider = new ConnectionBasedMysqlStreamProviderImpl();
+		}
 
-    /* (non-Javadoc)
-     * @see com.github.mysqlbinlog.client.jdbc.Connection#readRawPacket()
-     */
-    public RawMysqlPacket readRawPacket() {
-        MysqlBinlogByteArrayInputStream is = new MysqlBinlogByteArrayInputStream(this.inputStream);
+		mysqlStreamProvider.retrieveStreams(this.connection);
+		this.inputStream = mysqlStreamProvider.getInputStream();
+		this.outputStream = mysqlStreamProvider.getOutputStream();
+	}
 
-        return (RawMysqlPacket) responsePacketDeserializer.deserialize(is);
-    }
+	/* (non-Javadoc)
+	 * @see com.github.mysqlbinlog.client.jdbc.Connection#close()
+	 */
+	public void close() {
+		try {
+			if (this.connection != null) {            
+				this.connection.close();
+				this.connection = null;
+			}
+		} catch (Exception e) {
+			throw new RuntimeMysqlBinlogClientException(e);
+		}
+	}
 
-    /* (non-Javadoc)
-     * @see com.github.mysqlbinlog.client.jdbc.Connection#writeRawPacket(java.lang.Object)
-     */
-    public void writeRawPacket(CmdPacket msg) {
+	/* (non-Javadoc)
+	 * @see com.github.mysqlbinlog.client.jdbc.Connection#readRawPacket()
+	 */
+	public RawMysqlPacket readRawPacket() {
 
-        try {
-            RawMysqlPacket packet = new RawMysqlPacket();
-            packet.setRawBody(msg.getBody());
-            packet.setLength(packet.getRawBody().length);
-            packet.setSequence(msg instanceof AuthenticateCmdPacket ? 1 : 0);
+		MysqlBinlogByteArrayInputStream is = new MysqlBinlogByteArrayInputStream(this.inputStream);
 
-            this.outputStream.write(packet.getFullBody());
-            this.outputStream.flush();
-        } catch (IOException e) {
-            throw new RuntimeMysqlBinlogClientException(e);
-        }
-    }
+		return (RawMysqlPacket) responsePacketDeserializer.deserialize(is);
+	}
 
-    public java.sql.Connection getConnection() {
-        return connection;
-    }
+	/* (non-Javadoc)
+	 * @see com.github.mysqlbinlog.client.jdbc.Connection#writeRawPacket(java.lang.Object)
+	 */
+	public void writeRawPacket(CmdPacket msg) {
 
-    public InputStream getInputStream() {
-        return inputStream;
-    }
+		try {
+			RawMysqlPacket packet = new RawMysqlPacket();
+			packet.setRawBody(msg.getBody());
+			packet.setLength(packet.getRawBody().length);
+			packet.setSequence(msg instanceof AuthenticateCmdPacket ? 1 : 0);
 
-    public OutputStream getOutputStream() {
-        return outputStream;
-    }
+			this.outputStream.write(packet.getFullBody());
+			this.outputStream.flush();
+		} catch (IOException e) {
+			throw new RuntimeMysqlBinlogClientException(e);
+		}
+	}
 
-    public String getConnectionString() {
-        return connectionString;
-    }
+	public java.sql.Connection getConnection() {
+		return connection;
+	}
 
-    public String getUsername() {
-        return username;
-    }
+	public InputStream getInputStream() {
+		return inputStream;
+	}
 
-    public String getPassword() {
-        return password;
-    }
+	public OutputStream getOutputStream() {
+		return outputStream;
+	}
 
-    public String getJdbcDriverClassName() {
-        return jdbcDriverClassName;
-    }
+	public String getConnectionString() {
+		return connectionString;
+	}
 
-    public void setJdbcDriverClassName(String jdbcDriverClassName) {
-        this.jdbcDriverClassName = jdbcDriverClassName;
-    }
+	public String getUsername() {
+		return username;
+	}
 
-    public MysqlStreamProvider getMysqlStreamProvider() {
-        return mysqlStreamProvider;
-    }
+	public String getPassword() {
+		return password;
+	}
 
-    public void setMysqlStreamProvider(MysqlStreamProvider mysqlStreamProvider) {
-        this.mysqlStreamProvider = mysqlStreamProvider;
-    }
+	public String getJdbcDriverClassName() {
+		return jdbcDriverClassName;
+	}
+
+	public void setJdbcDriverClassName(String jdbcDriverClassName) {
+		this.jdbcDriverClassName = jdbcDriverClassName;
+	}
+
+	public MysqlStreamProvider getMysqlStreamProvider() {
+		return mysqlStreamProvider;
+	}
+
+	public void setMysqlStreamProvider(MysqlStreamProvider mysqlStreamProvider) {
+		this.mysqlStreamProvider = mysqlStreamProvider;
+	}
 
 }
