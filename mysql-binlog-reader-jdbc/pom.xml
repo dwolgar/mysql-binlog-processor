@@ -23,8 +23,8 @@
 	</developers>
 
 	<properties>
-		<mysql-connector-java.version>8.0.18</mysql-connector-java.version>
-		<mysql-connector-java-old.version>5.1.42</mysql-connector-java-old.version>
+		<mysql-connector-java.version>8.0.28</mysql-connector-java.version>
+		<mysql-connector-java-old.version>8.0.28</mysql-connector-java-old.version>
 		<vagrant.directory>${basedir}/additional/vagrant</vagrant.directory>
 	</properties>
 
